@@ -5,7 +5,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } f
 @Entity('estrategias')
 export class Estrategia {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: string;
 
   @Column({ type: 'varchar', length: 255 })
   nombre: string;
@@ -36,6 +36,7 @@ export class Estrategia {
   })
   resultadoCalculo: string;
 
+  
 /*  // Relaciones
   @OneToMany(() => Demanda, demanda => demanda.estrategia)
   demandas: Demanda[];
