@@ -14,7 +14,7 @@ export class ProductoController {
   @ApiOperation({ summary: 'Crear un nuevo producto' })
   @ApiResponse({ status: 201, description: 'Producto creado exitosamente', type: ProductoDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 409, description: 'ID o código ya existen' })
+  @ApiResponse({ status: 409, description: 'ID ya existe' })
   async create(@Body() createProductoDto: CreateProductoDto): Promise<ProductoDto> {
     return this.productoService.create(createProductoDto);
   }

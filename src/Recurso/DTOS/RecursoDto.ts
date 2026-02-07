@@ -4,9 +4,6 @@ export class RecursoDto {
   @ApiProperty({ description: 'ID único del recurso', example: 'REC-001', required: true })
   id: string;
 
-  @ApiProperty({ description: 'Código del recurso', example: 'MP-001' })
-  codigo: string;
-
   @ApiProperty({ description: 'Nombre del recurso', example: 'Ácido acético', required: true })
   nombre: string;
 

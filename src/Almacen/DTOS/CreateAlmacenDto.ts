@@ -8,16 +8,8 @@ export class CreateAlmacenDto {
     required: true
   })
   @IsString()
-  @Length(1, 50)
-  id: string;
-
-  @ApiProperty({ 
-    description: 'Código del almacén', 
-    example: 'ALM001'
-  })
-  @IsString()
   @Length(1, 20)
-  codigo: string;
+  id: string;
 
   @ApiProperty({ 
     description: 'Nombre del almacén', 

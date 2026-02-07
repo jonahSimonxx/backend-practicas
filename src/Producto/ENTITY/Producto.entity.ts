@@ -4,11 +4,8 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('PRODUCTO')
 export class Producto {
-    @PrimaryColumn({ type: 'varchar', length: 50 })
+    @PrimaryColumn({ type: 'varchar', length: 20 })
     id: string;
-
-    @Column({ name: 'CODIGO', type: 'numeric', precision: 10, scale: 2 })
-    codigo: number;
 
     @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
     nombre: string;

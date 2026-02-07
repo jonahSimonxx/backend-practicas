@@ -29,6 +29,12 @@ export class InventarioService {
       throw new BadRequestException('La fecha de caducidad debe ser posterior a la fecha de fabricación');
     }
 
+    // Validar que la fecha de vigencia sea posterior a la de fabricación (si existe)
+    if (createInventarioDto.fechaVigencia && 
+        createInventarioDto.fechaVigencia < createInventarioDto.fechaFabricacion) {
+      throw new BadRequestException('La fecha de vigencia debe ser posterior a la fecha de fabricación');
+    }
+
     // Validar que no haya un lote duplicado para el mismo recurso y almacén
     const loteExistente = await this.inventarioRepository.findOne({
       where: {
@@ -102,6 +108,14 @@ export class InventarioService {
     return inventarios.map(inventario => this.mapToDto(inventario));
   }
 
+  async findByNumeroMuestreo(numeroMuestreo: number): Promise<InventarioDto[]> {
+    const inventarios = await this.inventarioRepository.find({
+      where: { numeroMuestreo },
+      order: { fechaFabricacion: 'DESC' }
+    });
+    return inventarios.map(inventario => this.mapToDto(inventario));
+  }
+
   async findCaducados(): Promise<InventarioDto[]> {
     const hoy = new Date();
     const inventarios = await this.inventarioRepository.find({
@@ -109,6 +123,17 @@ export class InventarioService {
         fechaCaducidad: LessThanOrEqual(hoy)
       },
       order: { fechaCaducidad: 'ASC' }
+    });
+    return inventarios.map(inventario => this.mapToDto(inventario));
+  }
+
+  async findVencidosVigencia(): Promise<InventarioDto[]> {
+    const hoy = new Date();
+    const inventarios = await this.inventarioRepository.find({
+      where: {
+        fechaVigencia: LessThanOrEqual(hoy)
+      },
+      order: { fechaVigencia: 'ASC' }
     });
     return inventarios.map(inventario => this.mapToDto(inventario));
   }
@@ -123,6 +148,20 @@ export class InventarioService {
         fechaCaducidad: Between(hoy, fechaLimite)
       },
       order: { fechaCaducidad: 'ASC' }
+    });
+    return inventarios.map(inventario => this.mapToDto(inventario));
+  }
+
+  async findPorVencerVigencia(dias: number = 30): Promise<InventarioDto[]> {
+    const hoy = new Date();
+    const fechaLimite = new Date();
+    fechaLimite.setDate(hoy.getDate() + dias);
+    
+    const inventarios = await this.inventarioRepository.find({
+      where: {
+        fechaVigencia: Between(hoy, fechaLimite)
+      },
+      order: { fechaVigencia: 'ASC' }
     });
     return inventarios.map(inventario => this.mapToDto(inventario));
   }
@@ -143,6 +182,12 @@ export class InventarioService {
     if (updateInventarioDto.fechaCaducidad && 
         updateInventarioDto.fechaCaducidad < inventario.fechaFabricacion) {
       throw new BadRequestException('La fecha de caducidad debe ser posterior a la fecha de fabricación');
+    }
+
+    // Validar fecha de vigencia si se actualiza
+    if (updateInventarioDto.fechaVigencia && 
+        updateInventarioDto.fechaVigencia < inventario.fechaFabricacion) {
+      throw new BadRequestException('La fecha de vigencia debe ser posterior a la fecha de fabricación');
     }
 
     Object.assign(inventario, updateInventarioDto);
@@ -220,20 +265,77 @@ export class InventarioService {
       return {
         almacenId,
         totalInventarios: 0,
+        totalDisponible: 0,
         cantidadCaducados: 0,
-        cantidadPorCaducar: 0
+        cantidadPorCaducar: 0,
+        cantidadVencidosVigencia: 0,
+        cantidadPorVencerVigencia: 0
       };
     }
+
+    const totalDisponible = inventarios.reduce((sum, inv) => sum + inv.cantidadDisponible, 0);
+    const cantidadCaducados = inventarios.filter(inv => {
+      if (!inv.fechaCaducidad) return false;
+      return new Date(inv.fechaCaducidad) < new Date();
+    }).length;
+
+    const cantidadPorCaducar = inventarios.filter(inv => {
+      if (!inv.fechaCaducidad || new Date(inv.fechaCaducidad) < new Date()) return false;
+      const diasRestantes = Math.ceil((new Date(inv.fechaCaducidad).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return diasRestantes <= 30;
+    }).length;
+
+    const cantidadVencidosVigencia = inventarios.filter(inv => {
+      if (!inv.fechaVigencia) return false;
+      return new Date(inv.fechaVigencia) < new Date();
+    }).length;
+
+    const cantidadPorVencerVigencia = inventarios.filter(inv => {
+      if (!inv.fechaVigencia || new Date(inv.fechaVigencia) < new Date()) return false;
+      const diasRestantes = Math.ceil((new Date(inv.fechaVigencia).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return diasRestantes <= 30;
+    }).length;
 
     return {
       almacenId,
       totalInventarios: inventarios.length,
-      porcentajeDisponible: ((inventarios.filter(inv => inv.estado === 'disponible').length / inventarios.length) * 100).toFixed(2)
+      totalDisponible: parseFloat(totalDisponible.toFixed(2)),
+      cantidadCaducados,
+      cantidadPorCaducar,
+      cantidadVencidosVigencia,
+      cantidadPorVencerVigencia,
+      porcentajeDisponible: ((inventarios.filter(inv => inv.estado === 'disponible').length / inventarios.length) * 100).toFixed(2),
+      recursosDiferentes: [...new Set(inventarios.map(inv => inv.recursoId))].length
     };
   }
 
+  async getExistenciasDetalladasPorRecurso(recursoId: string): Promise<any[]> {
+    const inventarios = await this.findByRecurso(recursoId);
+    
+    return inventarios.map(inventario => ({
+      id: inventario.id,
+      almacenId: inventario.almacenId,
+      lote: inventario.lote,
+      fabricante: inventario.fabricante,
+      fechaFabricacion: inventario.fechaFabricacion,
+      fechaCaducidad: inventario.fechaCaducidad,
+      fechaVigencia: inventario.fechaVigencia,
+      numeroMuestreo: inventario.numeroMuestreo,
+      cantidadDisponible: inventario.cantidadDisponible,
+      estado: inventario.estado,
+      caducado: this.isCaducado(inventario.fechaCaducidad),
+      vigente: this.isVigente(inventario.fechaVigencia),
+      diasParaCaducar: this.calcularDiasParaCaducar(inventario.fechaCaducidad),
+      diasParaVencerVigencia: this.calcularDiasParaCaducar(inventario.fechaVigencia)
+    }));
+  }
+
+  // Métodos de ayuda privados
   private mapToDto(inventario: Inventario): InventarioDto {
-    const caducado = inventario.isCaducado();
+    const caducado = this.isCaducado(inventario.fechaCaducidad);
+    const vigente = this.isVigente(inventario.fechaVigencia);
+    const diasParaCaducar = this.calcularDiasParaCaducar(inventario.fechaCaducidad);
+    const diasParaVencerVigencia = this.calcularDiasParaCaducar(inventario.fechaVigencia);
     
     return {
       id: inventario.id,
@@ -243,11 +345,28 @@ export class InventarioService {
       fabricante: inventario.fabricante,
       fechaFabricacion: inventario.fechaFabricacion,
       fechaCaducidad: inventario.fechaCaducidad,
+      fechaVigencia: inventario.fechaVigencia,
+      numeroMuestreo: inventario.numeroMuestreo,
       cantidadDisponible: inventario.cantidadDisponible,
       estado: inventario.estado
-      // recursoNombre: inventario.recurso?.nombre, // FUTURO
-      // almacenNombre: inventario.almacen?.nombre, // FUTURO
-      // tipoRecurso: inventario.recurso?.tipoRecurso // FUTURO
     };
+  }
+
+  private isCaducado(fechaCaducidad: Date): boolean {
+    if (!fechaCaducidad) return false;
+    return new Date() > fechaCaducidad;
+  }
+
+  private isVigente(fechaVigencia: Date): boolean {
+    if (!fechaVigencia) return true;
+    return new Date() <= fechaVigencia;
+  }
+
+  private calcularDiasParaCaducar(fecha: Date): number | null {
+    if (!fecha) return null;
+    const hoy = new Date();
+    const diferenciaMs = fecha.getTime() - hoy.getTime();
+    const dias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    return dias > 0 ? dias : 0;
   }
 }

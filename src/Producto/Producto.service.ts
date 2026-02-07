@@ -23,15 +23,6 @@ export class ProductoService {
       throw new ConflictException(`Ya existe un producto con ID ${createProductoDto.id}`);
     }
 
-    // Verificar si ya existe un producto con ese código
-    const existenteCodigo = await this.productoRepository.findOne({
-      where: { codigo: createProductoDto.codigo }
-    });
-
-    if (existenteCodigo) {
-      throw new ConflictException(`Ya existe un producto con código ${createProductoDto.codigo}`);
-    }
-
     const producto = this.productoRepository.create(createProductoDto);
     const savedProducto = await this.productoRepository.save(producto);
     return this.mapToDto(savedProducto);
@@ -84,16 +75,6 @@ export class ProductoService {
       throw new ConflictException('No se puede modificar el ID de un producto');
     }
 
-    // Si se actualiza el código, verificar que no exista otro con ese código
-    if (updateProductoDto.codigo && updateProductoDto.codigo !== producto.codigo) {
-      const existenteCodigo = await this.productoRepository.findOne({
-        where: { codigo: updateProductoDto.codigo }
-      });
-      if (existenteCodigo) {
-        throw new ConflictException(`Ya existe un producto con código ${updateProductoDto.codigo}`);
-      }
-    }
-
     Object.assign(producto, updateProductoDto);
     const updatedProducto = await this.productoRepository.save(producto);
     return this.mapToDto(updatedProducto);
@@ -126,7 +107,6 @@ export class ProductoService {
   private mapToDto(producto: Producto): ProductoDto {
     return {
       id: producto.id,
-      codigo: producto.codigo,
       nombre: producto.nombre,
       descripcion: producto.descripcion || '',
       tipoEnvase: producto.tipoEnvase,

@@ -12,14 +12,6 @@ export class CreateRecursoDto {
   id: string;
 
   @ApiProperty({ 
-    description: 'Código del recurso', 
-    example: 'MP-001'
-  })
-  @IsString()
-  @Length(1, 20)
-  codigo: string;
-
-  @ApiProperty({ 
     description: 'Nombre del recurso', 
     example: 'Ácido acético',
     required: true

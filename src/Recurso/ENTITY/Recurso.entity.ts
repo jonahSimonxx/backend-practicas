@@ -8,9 +8,6 @@ export class Recurso {
   @PrimaryColumn({ type: 'varchar', length: 20 })
   id: string;
 
-  @Column({ name: 'CODIGO', type: 'varchar', length: 20 })
-  codigo: string;
-
   @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
   nombre: string;
 

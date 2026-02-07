@@ -4,16 +4,9 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 export class Almacen {
   @PrimaryColumn({ 
     type: 'varchar', 
-    length: 50  
-  })
-  id: string;
-
-  @Column({ 
-    name: 'CODIGO',  
-    type: 'varchar', 
     length: 20  
   })
-  codigo: string;
+  id: string;
 
   @Column({ 
     name: 'NOMBRE',

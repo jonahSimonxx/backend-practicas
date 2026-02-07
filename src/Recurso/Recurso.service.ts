@@ -23,15 +23,6 @@ export class RecursoService {
       throw new ConflictException(`Ya existe un recurso con ID ${createRecursoDto.id}`);
     }
 
-    // Verificar si ya existe un recurso con ese código
-    const existenteCodigo = await this.recursoRepository.findOne({
-      where: { codigo: createRecursoDto.codigo }
-    });
-
-    if (existenteCodigo) {
-      throw new ConflictException(`Ya existe un recurso con código ${createRecursoDto.codigo}`);
-    }
-
     const recurso = this.recursoRepository.create(createRecursoDto);
     const savedRecurso = await this.recursoRepository.save(recurso);
     return this.mapToDto(savedRecurso);
@@ -74,16 +65,6 @@ export class RecursoService {
     // No permitir modificar el ID
     if (updateRecursoDto.id && updateRecursoDto.id !== id) {
       throw new ConflictException('No se puede modificar el ID de un recurso');
-    }
-
-    // Si se actualiza el código, verificar que no exista otro con ese código
-    if (updateRecursoDto.codigo && updateRecursoDto.codigo !== recurso.codigo) {
-      const existenteCodigo = await this.recursoRepository.findOne({
-        where: { codigo: updateRecursoDto.codigo }
-      });
-      if (existenteCodigo) {
-        throw new ConflictException(`Ya existe un recurso con código ${updateRecursoDto.codigo}`);
-      }
     }
 
     Object.assign(recurso, updateRecursoDto);
@@ -136,7 +117,6 @@ export class RecursoService {
   private mapToDto(recurso: Recurso): RecursoDto {
     return {
       id: recurso.id,
-      codigo: recurso.codigo,
       nombre: recurso.nombre,
       tipoRecurso: recurso.tipoRecurso,
       unidadMedida: recurso.unidadMedida,

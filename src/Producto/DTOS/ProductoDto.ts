@@ -4,9 +4,6 @@ export class ProductoDto {
   @ApiProperty({ description: 'ID único del producto', example: 'PROD-001', required: true })
   id: string;
 
-  @ApiProperty({ description: 'Código numérico', example: 1001, required: true })
-  codigo: number;
-
   @ApiProperty({ description: 'Nombre del producto', example: 'Dipirona', required: true })
   nombre: string;
 

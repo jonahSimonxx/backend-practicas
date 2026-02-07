@@ -14,7 +14,7 @@ export class RecursoController {
   @ApiOperation({ summary: 'Crear un nuevo recurso' })
   @ApiResponse({ status: 201, description: 'Recurso creado exitosamente', type: RecursoDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 409, description: 'ID o código ya existen' })
+  @ApiResponse({ status: 409, description: 'ID ya existe' })
   async create(@Body() createRecursoDto: CreateRecursoDto): Promise<RecursoDto> {
     return this.recursoService.create(createRecursoDto);
   }

@@ -15,6 +15,15 @@ export class UpdateInventarioDto extends PartialType(CreateInventarioDto) {
   id?: string;
 
   @ApiProperty({ 
+    description: 'Número único (no modificable)', 
+    example: '1234',
+    required: false,
+    readOnly: true
+  })
+  @IsOptional()
+  numeroMuestreo?: number;
+
+  @ApiProperty({ 
     description: 'Nuevo estado', 
     enum: ['disponible', 'resarvado'],
     required: false
@@ -43,4 +52,15 @@ export class UpdateInventarioDto extends PartialType(CreateInventarioDto) {
   @IsDate()
   @IsOptional()
   fechaCaducidad?: Date;
+
+  @ApiProperty({ 
+    description: 'Nueva fecha de vigencia', 
+    example: '2025-06-15T10:30:00Z',
+    required: false
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  fechaVigencia?: Date;
+
 }

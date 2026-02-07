@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsIn, IsOptional, Min, Length, IsDate } from 'class-validator';
+import { IsString, IsNumber, IsIn, IsOptional, Min, Length, IsDate, min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -58,14 +58,14 @@ export class CreateInventarioDto {
   fechaFabricacion: Date;
 
   @ApiProperty({ 
-    description: 'Fecha de caducidad (opcional)', 
+    description: 'Fecha de caducidad', 
     example: '2025-01-15T10:30:00Z',
     required: true
   })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
-  fechaCaducidad?: Date;
+  fechaCaducidad: Date;
 
   @ApiProperty({ 
     description: 'Cantidad disponible', 
@@ -78,7 +78,7 @@ export class CreateInventarioDto {
 
   @ApiProperty({ 
     description: 'Estado del inventario', 
-    enum: ['disponible', 'resarvado'],
+    enum: ['disponible', 'reservado'],
     default: 'disponible',
     required: true
   })
@@ -86,4 +86,24 @@ export class CreateInventarioDto {
   @IsIn(['disponible', 'resarvado']) 
   @IsOptional()
   estado?: string = 'disponible';
+
+  @ApiProperty({
+    description: 'Número de muestreo',
+    example: 1234,
+    required: true,
+  })
+  @IsNumber()
+  @Min(0)
+  numeroMuestreo: number;
+
+  @ApiProperty({ 
+    description: 'Fecha de vigencia', 
+    example: '2025-01-15T10:30:00Z',
+    required: true
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  fechaVigencia: Date;
+
 }

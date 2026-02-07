@@ -32,14 +32,4 @@ export class UpdateProductoDto extends PartialType(CreateProductoDto) {
   @IsIn(['directo', 'indirecto'])
   @IsOptional()
   tipoProducto?: string;
-
-  @ApiProperty({ 
-    description: 'Nuevo código', 
-    example: 1002,
-    required: false
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  codigo?: number;
 }

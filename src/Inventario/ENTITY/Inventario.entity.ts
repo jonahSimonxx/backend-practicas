@@ -36,6 +36,12 @@ export class Inventario {
   })
   estado: string; 
 
+  @Column({ name: 'NUMERO_MUESTREO', type: 'numeric', precision: 10, scale: 2 })
+  numeroMuestreo: number;
+
+  @Column({ name: 'FECHA_VIGENCIA', type: 'timestamp without time zone' })
+  fechaVigencia: Date;
+
   // ========== RELACIONES FUTURAS ==========
   // @ManyToOne(() => Recurso, recurso => recurso.inventarios)
   // @JoinColumn({ name: 'RECURSO_ID' })

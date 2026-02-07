@@ -138,7 +138,6 @@ export class AlmacenService {
   private mapToDto(almacen: Almacen): AlmacenDto {
     return {
       id: almacen.id,
-      codigo: almacen.codigo,
       nombre: almacen.nombre,
       ubicacion: almacen.ubicacion,
       tipoAlmacen: almacen.tipoAlmacen,

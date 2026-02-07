@@ -4,13 +4,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateProductoDto {
   @ApiProperty({ description: 'ID único del producto', example: 'PROD-001', required: true })
   @IsString()
-  @Length(1, 50)
+  @Length(1, 20)
   id: string;
-
-  @ApiProperty({ description: 'Código numérico del producto', example: 1001, required: true })
-  @IsNumber()
-  @Min(0)
-  codigo: number;
 
   @ApiProperty({ description: 'Nombre del producto', example: 'Dipirona', required: true })
   @IsString()

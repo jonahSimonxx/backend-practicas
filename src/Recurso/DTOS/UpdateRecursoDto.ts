@@ -22,14 +22,4 @@ export class UpdateRecursoDto extends PartialType(CreateRecursoDto) {
   @IsIn(['materia prima', 'insumo'])
   @IsOptional()
   tipoRecurso?: string;
-
-  @ApiProperty({ 
-    description: 'Nuevo código', 
-    example: 'MP-002',
-    required: false
-  })
-  @IsString()
-  @Length(1, 20)
-  @IsOptional()
-  codigo?: string;
 }
