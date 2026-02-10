@@ -1,6 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
-// import { Demanda } from '../../demandas/entities/demanda.entity'; // FUTURA
-// import { CalculoEstrategia } from '../../calculos/entities/calculo-estrategia.entity'; // FUTURA
+import { Entity, PrimaryColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Demanda } from '../../Demanda/ENTITY/Demanda.entity';
 
 @Entity('ESTRATEGIA') // Nombre exacto en tu BD
 export class Estrategia {
@@ -35,9 +34,9 @@ export class Estrategia {
   })
   resultadoCalculo: string; 
 
-  // ========== RELACIONES FUTURAS ==========
-  // @OneToMany(() => Demanda, demanda => demanda.estrategia)
-  // demandas: Demanda[];
+  // ========== RELACIONES ==========
+  @OneToMany(() => Demanda, demanda => demanda.estrategia)
+  demandas: Demanda[];
   
   // @OneToMany(() => CalculoEstrategia, calculo => calculo.estrategia)
   // calculos: CalculoEstrategia[];

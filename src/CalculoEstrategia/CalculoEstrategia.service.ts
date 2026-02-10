@@ -2,6 +2,9 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CalculoEstrategia } from './ENTITY/CalculoEstrategia.entity';
+import { ResultadoCalculoDto } from './DTOS/resultado-calculo.dto';
+import { CalculoRequestDto } from './DTOS/calculo-request.dto';
+import { EstrategiaService } from '../Estrategia/Estrategia_service';
 import { CreateCalculoEstrategiaDto } from './DTOS/CreateCalculoEstrategiaDto';
 import { UpdateCalculoEstrategiaDto } from './DTOS/UpdateCalculoEstrategiaDto';
 import { CalculoEstrategiaDto } from './DTOS/CalculoEstrategiaDto';
@@ -11,6 +14,7 @@ export class CalculoEstrategiaService {
   constructor(
     @InjectRepository(CalculoEstrategia)
     private calculoEstrategiaRepository: Repository<CalculoEstrategia>,
+    private estrategiaService: EstrategiaService,
   ) {}
 
   async create(createCalculoEstrategiaDto: CreateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
@@ -140,6 +144,13 @@ export class CalculoEstrategiaService {
         tendencia: 'sin datos'
       };
     }
+
+    // calcularEstrategiaDetallada delegada a EstrategiaService (disponible vía módulo importado)
+  }
+
+  async calcularEstrategiaDetallada(estrategiaId: string, calculoRequest?: CalculoRequestDto): Promise<ResultadoCalculoDto> {
+    return this.estrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest);
+  }
 
 
   private validarPresupuesto(presupuestoUtilizado: number, presupuestoDisponible: number): void {

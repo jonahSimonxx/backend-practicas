@@ -1,7 +1,6 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
-// import { RelacionProductoRecurso } from '../../relaciones/entities/relacion-producto-recurso.entity'; // FUTURA
-// import { DetalleCalculoRecurso } from '../../calculos/entities/detalle-calculo-recurso.entity'; // FUTURA
-// import { Inventario } from '../../inventario/entities/inventario.entity'; // FUTURA
+import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
+import { RelacionProductoRecurso } from '../../RelacionProductoRecurso/ENTITY/RelacionProductoRecurso.entity';
+import { Inventario } from '../../Inventario/ENTITY/Inventario.entity';
 
 @Entity('RECURSO')
 export class Recurso {
@@ -24,13 +23,13 @@ export class Recurso {
   @Column({ name: 'DESCRIPCION', type: 'text', nullable: true })
   descripcion: string;
 
-  // ========== RELACIONES FUTURAS ==========
-  // @OneToMany(() => RelacionProductoRecurso, relacion => relacion.recurso)
-  // relacionesProductos: RelacionProductoRecurso[];
+  @Column({ name: 'CRITERIO_RELACION', type: 'varchar', length: 50, nullable: true })
+  criterioRelacion: string;
+
+  // ========== RELACIONES ==========
+  @OneToMany(() => RelacionProductoRecurso, relacion => relacion.recurso)
+  relacionesProductos: RelacionProductoRecurso[];
   
-  // @OneToMany(() => DetalleCalculoRecurso, detalle => detalle.recurso)
-  // detallesCalculo: DetalleCalculoRecurso[];
-  
-  // @OneToMany(() => Inventario, inventario => inventario.recurso)
-  // inventarios: Inventario[];
+  @OneToMany(() => Inventario, inventario => inventario.recurso)
+  inventarios: Inventario[];
 }

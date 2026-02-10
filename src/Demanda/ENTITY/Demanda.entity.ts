@@ -1,6 +1,6 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
-// import { Producto } from '../../productos/entities/producto.entity'; // FUTURA
-// import { Estrategia } from '../../estrategias/entities/estrategia.entity'; // FUTURA
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Producto } from '../../Producto/ENTITY/Producto.entity';
+import { Estrategia } from '../../Estrategia/ENTITY/Estrategia.entity';
 
 @Entity('DEMANDA')
 export class Demanda {
@@ -30,14 +30,14 @@ export class Demanda {
   })
   periodo: string; 
 
-  // ========== RELACIONES FUTURAS ==========
-  // @ManyToOne(() => Producto, producto => producto.demandas)
-  // @JoinColumn({ name: 'PRODUCTO_ID' })
-  // producto: Producto;
+  // ========== RELACIONES ==========
+  @ManyToOne(() => Producto, producto => producto.demandas)
+  @JoinColumn({ name: 'PRODUCTO_ID' })
+  producto: Producto;
   
-  // @ManyToOne(() => Estrategia, estrategia => estrategia.demandas)
-  // @JoinColumn({ name: 'ESTRATEGIA_ID' })
-  // estrategia: Estrategia;
+  @ManyToOne(() => Estrategia, estrategia => estrategia.demandas)
+  @JoinColumn({ name: 'ESTRATEGIA_ID' })
+  estrategia: Estrategia;
 
   /*// Métodos de ayuda
   getDemandaAnualizada(): number {

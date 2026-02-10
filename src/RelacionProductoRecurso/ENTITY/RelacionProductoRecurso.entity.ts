@@ -1,6 +1,6 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
-// import { Producto } from '../../productos/entities/producto.entity'; // FUTURA
-// import { Recurso } from '../../recursos/entities/recurso.entity'; // FUTURA
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Producto } from '../../Producto/ENTITY/Producto.entity';
+import { Recurso } from '../../Recurso/ENTITY/Recurso.entity';
 
 @Entity('RELACION_PRODUCTO_RECURSO')
 export class RelacionProductoRecurso {
@@ -22,14 +22,15 @@ export class RelacionProductoRecurso {
     length: 20
   })
   tipoRelacion: string; 
-  // ========== RELACIONES FUTURAS ==========
-  // @ManyToOne(() => Producto, producto => producto.relacionesRecursos)
-  // @JoinColumn({ name: 'PRODUCTO_ID' })
-  // producto: Producto;
   
-  // @ManyToOne(() => Recurso, recurso => recurso.relacionesProductos)
-  // @JoinColumn({ name: 'RECURSO_ID' })
-  // recurso: Recurso;
+  // ========== RELACIONES ==========
+  @ManyToOne(() => Producto, producto => producto.relacionesRecursos)
+  @JoinColumn({ name: 'PRODUCTO_ID' })
+  producto: Producto;
+  
+  @ManyToOne(() => Recurso, recurso => recurso.relacionesProductos)
+  @JoinColumn({ name: 'RECURSO_ID' })
+  recurso: Recurso;
 
   // Métodos de ayuda
   isConsumo(): boolean {

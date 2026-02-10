@@ -1,6 +1,6 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
-// import { Recurso } from '../../recursos/entities/recurso.entity'; // FUTURA
-// import { Almacen } from '../../almacenes/entities/almacen.entity'; // FUTURA
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Recurso } from '../../Recurso/ENTITY/Recurso.entity';
+import { Almacen } from '../../Almacen/ENTITY/Almacen.entity';
 
 @Entity('INVENTARIO')
 export class Inventario {
@@ -42,12 +42,14 @@ export class Inventario {
   @Column({ name: 'FECHA_VIGENCIA', type: 'timestamp without time zone' })
   fechaVigencia: Date;
 
-  // ========== RELACIONES FUTURAS ==========
-  // @ManyToOne(() => Recurso, recurso => recurso.inventarios)
-  // @JoinColumn({ name: 'RECURSO_ID' })
-  // recurso: Recurso;
+  // ========== RELACIONES ==========
+  @ManyToOne(() => Recurso, recurso => recurso.inventarios)
+  @JoinColumn({ name: 'RECURSO_ID' })
+  recurso: Recurso;
   
-  // @ManyToOne(() => Almacen, almacen => almacen.inventarios)
+  @ManyToOne(() => Almacen, almacen => almacen.inventarios)
+  @JoinColumn({ name: 'ALMACEN_ID' })
+  almacen: Almacen;
   // @JoinColumn({ name: 'ALMACEN_ID' })
   // almacen: Almacen;
   

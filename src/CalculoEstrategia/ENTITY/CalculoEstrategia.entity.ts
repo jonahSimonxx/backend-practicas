@@ -1,6 +1,6 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
-// import { Estrategia } from '../../estrategias/entities/estrategia.entity'; // FUTURA
-// import { DetalleCalculoRecurso } from './detalle-calculo-recurso.entity'; // FUTURA (misma carpeta)
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Estrategia } from '../../Estrategia/ENTITY/Estrategia.entity';
+import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
 
 @Entity('CALCULO_ESTRATEGIA') // Verifica el nombre exacto en tu BD
 export class CalculoEstrategia {
@@ -29,11 +29,11 @@ export class CalculoEstrategia {
   @Column({ name: 'OBSERVACIONES', type: 'text', nullable: true })
   observaciones: string;
 
-  // ========== RELACIONES FUTURAS ==========
-  // @ManyToOne(() => Estrategia, estrategia => estrategia.calculos)
-  // @JoinColumn({ name: 'ESTRATEGIA_ID' })
-  // estrategia: Estrategia;
+  // ========== RELACIONES ==========
+  @ManyToOne(() => Estrategia, estrategia => estrategia.calculos)
+  @JoinColumn({ name: 'ESTRATEGIA_ID' })
+  estrategia: Estrategia;
   
-  // @OneToMany(() => DetalleCalculoRecurso, detalle => detalle.calculo)
-  // detallesRecursos: DetalleCalculoRecurso[];
+  @OneToMany(() => DetalleCalculoRecurso, detalle => detalle.calculo)
+  detallesRecursos: DetalleCalculoRecurso[];
 }
