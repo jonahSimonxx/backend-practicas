@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
+import { Inventario } from '../../Inventario/ENTITY/Inventario.entity';
 
 @Entity('ALMACEN') 
 export class Almacen {
@@ -35,5 +36,9 @@ export class Almacen {
     length: 50,
     default: 'activo'  
   })
-  estado: string;  
+  estado: string;
+
+  // ========== RELACIONES ==========
+  @OneToMany(() => Inventario, inventario => inventario.almacen)
+  inventarios: Inventario[];
 }

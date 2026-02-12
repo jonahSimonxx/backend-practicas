@@ -108,9 +108,9 @@ export class DetalleCalculoRecursoService {
     return detalles.map(detalle => this.mapToDto(detalle));
   }
 
-  async findBySatisfaccion(satisfacer: boolean): Promise<DetalleCalculoRecursoDto[]> {
+  async findBySatisfaccion(esSatisfacible: boolean): Promise<DetalleCalculoRecursoDto[]> {
     const detalles = await this.detalleRepository.find({
-      where: { satisfacer },
+      where: { esSatisfacible },
       order: { calculoId: 'ASC' }
     });
     return detalles.map(detalle => this.mapToDto(detalle));
@@ -161,21 +161,21 @@ export class DetalleCalculoRecursoService {
       }
     }
 
-    // Validar consistencia de satisfacer si se actualizan cantidades
+    // Validar consistencia de esSatisfacible si se actualizan cantidades
     if (updateDetalleDto.cantidadRequeridaTotal !== undefined || 
         updateDetalleDto.cantidadDisponibleTotal !== undefined ||
-        updateDetalleDto.satisfacer !== undefined) {
+        updateDetalleDto.esSatisfacible !== undefined) {
       
       const nuevaCantidadRequerida = updateDetalleDto.cantidadRequeridaTotal ?? detalle.cantidadRequeridaTotal;
       const nuevaCantidadDisponible = updateDetalleDto.cantidadDisponibleTotal ?? detalle.cantidadDisponibleTotal;
-      const nuevoSatisfacer = updateDetalleDto.satisfacer ?? detalle.satisfacer;
+      const nuevoEsSatisfacible = updateDetalleDto.esSatisfacible ?? detalle.esSatisfacible;
       
       const satisfacerConsistente = 
-        (nuevaCantidadDisponible >= nuevaCantidadRequerida) === nuevoSatisfacer;
+        (nuevaCantidadDisponible >= nuevaCantidadRequerida) === nuevoEsSatisfacible;
 
       if (!satisfacerConsistente) {
         throw new ConflictException(
-          'El campo "satisfacer" no es consistente con las cantidades proporcionadas'
+          'El campo "esSatisfacible" no es consistente con las cantidades proporcionadas'
         );
       }
     }
@@ -218,7 +218,7 @@ export class DetalleCalculoRecursoService {
       };
     }
 
-    const satisfacibles = detalles.filter(d => d.satisfacer).length;
+    const satisfacibles = detalles.filter(d => d.esSatisfacible).length;
     const porcentajeSatisfaccion = (satisfacibles / detalles.length) * 100;
 
     return {
@@ -242,7 +242,7 @@ export class DetalleCalculoRecursoService {
       recursoId: detalle.recursoId,
       cantidadRequeridaTotal: detalle.cantidadRequeridaTotal,
       cantidadDisponibleTotal: detalle.cantidadDisponibleTotal,
-      satisfacer: detalle.satisfacer
+      esSatisfacible: detalle.esSatisfacible
     };
   }
 }

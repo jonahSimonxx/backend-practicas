@@ -17,5 +17,5 @@ export class DetalleCalculoRecursoDto {
   cantidadDisponibleTotal: number;
 
   @ApiProperty({ description: 'Indica si se puede satisfacer', example: true, required: true })
-  satisfacer: boolean;
+  esSatisfacible: boolean;
 }

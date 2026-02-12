@@ -82,7 +82,7 @@ export class DetalleCalculoRecursoController {
       return { porcentaje: 0 };
     }
     
-    const satisfacibles = detalles.filter(d => d.satisfacer).length;
+    const satisfacibles = detalles.filter(d => d.esSatisfacible).length;
     const porcentaje = (satisfacibles / detalles.length) * 100;
     
     return { porcentaje: parseFloat(porcentaje.toFixed(2)) };

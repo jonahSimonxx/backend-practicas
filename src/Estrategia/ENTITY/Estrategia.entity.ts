@@ -1,5 +1,6 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { Demanda } from '../../Demanda/ENTITY/Demanda.entity';
+import { CalculoEstrategia } from '../../CalculoEstrategia/ENTITY/CalculoEstrategia.entity';
 
 @Entity('ESTRATEGIA') 
 export class Estrategia {
@@ -37,6 +38,9 @@ export class Estrategia {
   // ========== RELACIONES ==========
   @OneToMany(() => Demanda, demanda => demanda.estrategia)
   demandas: Demanda[];
+  
+  @OneToMany(() => CalculoEstrategia, calculo => calculo.estrategia)
+  calculos: CalculoEstrategia[];
   
   isActiva(): boolean {
     return this.estado === 'activo';

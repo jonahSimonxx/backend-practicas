@@ -40,5 +40,5 @@ export class UpdateDetalleCalculoRecursoDto extends PartialType(CreateDetalleCal
   })
   @IsBoolean()
   @IsOptional()
-  satisfacer?: boolean;
+  esSatisfacible?: boolean;
 }

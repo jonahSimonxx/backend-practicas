@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
 import { RelacionProductoRecurso } from '../../RelacionProductoRecurso/ENTITY/RelacionProductoRecurso.entity';
 import { Inventario } from '../../Inventario/ENTITY/Inventario.entity';
+import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
 
 @Entity('RECURSO')
 export class Recurso {
@@ -32,4 +33,7 @@ export class Recurso {
   
   @OneToMany(() => Inventario, inventario => inventario.recurso)
   inventarios: Inventario[];
+
+  @OneToMany(() => DetalleCalculoRecurso, detalle => detalle.recurso)
+  detallesCalculo: DetalleCalculoRecurso[];
 }
