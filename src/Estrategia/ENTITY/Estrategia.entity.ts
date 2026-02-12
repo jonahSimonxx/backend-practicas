@@ -1,10 +1,10 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 import { Demanda } from '../../Demanda/ENTITY/Demanda.entity';
 
-@Entity('ESTRATEGIA') // Nombre exacto en tu BD
+@Entity('ESTRATEGIA') 
 export class Estrategia {
-  @PrimaryColumn({ type: 'varchar', length: 20 }) // CORREGIDO: era @PrimaryGeneratedColumn() con number
-  id: string; // CORREGIDO: era number
+  @PrimaryColumn({ type: 'varchar', length: 20 }) 
+  id: string; 
 
   @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
   nombre: string;
@@ -38,16 +38,6 @@ export class Estrategia {
   @OneToMany(() => Demanda, demanda => demanda.estrategia)
   demandas: Demanda[];
   
-  // @OneToMany(() => CalculoEstrategia, calculo => calculo.estrategia)
-  // calculos: CalculoEstrategia[];
-  
-  // Método de ayuda (descomentar cuando tengas relaciones)
-  // getTotalDemandado(): number {
-  //   if (!this.demandas) return 0;
-  //   return this.demandas.reduce((total, demanda) => total + demanda.cantidadRequerida, 0);
-  // }
-
-  // Nuevos métodos de ayuda
   isActiva(): boolean {
     return this.estado === 'activo';
   }

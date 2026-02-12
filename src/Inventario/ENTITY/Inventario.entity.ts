@@ -50,8 +50,6 @@ export class Inventario {
   @ManyToOne(() => Almacen, almacen => almacen.inventarios)
   @JoinColumn({ name: 'ALMACEN_ID' })
   almacen: Almacen;
-  // @JoinColumn({ name: 'ALMACEN_ID' })
-  // almacen: Almacen;
   
   isCaducado(): boolean {
     if (!this.fechaCaducidad) return false;
@@ -63,6 +61,6 @@ export class Inventario {
   }
 
   isReservado(): boolean {
-    return this.estado === 'resarvado';
+    return this.estado === 'reservado';
   }
 }

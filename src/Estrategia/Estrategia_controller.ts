@@ -57,20 +57,20 @@ export class EstrategiaController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una estrategia por ID' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) // CORREGIDO: type String
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
   @ApiResponse({ status: 200, description: 'Estrategia encontrada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async findOne(@Param('id') id: string): Promise<EstrategiaDto> { // CORREGIDO: id es string
+  async findOne(@Param('id') id: string): Promise<EstrategiaDto> { 
     return this.estrategiaService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar una estrategia' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) // CORREGIDO: type String
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
   @ApiResponse({ status: 200, description: 'Estrategia actualizada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
   async update(
-    @Param('id') id: string, // CORREGIDO: id es string
+    @Param('id') id: string, 
     @Body() updateEstrategiaDto: UpdateEstrategiaDto,
   ): Promise<EstrategiaDto> {
     return this.estrategiaService.update(id, updateEstrategiaDto);
@@ -79,10 +79,10 @@ export class EstrategiaController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar una estrategia' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) // CORREGIDO: type String
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
   @ApiResponse({ status: 204, description: 'Estrategia eliminada' })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async remove(@Param('id') id: string): Promise<void> { // CORREGIDO: id es string
+  async remove(@Param('id') id: string): Promise<void> { 
     return this.estrategiaService.remove(id);
   }
 
@@ -104,23 +104,19 @@ export class EstrategiaController {
     return this.estrategiaService.desactivarEstrategia(id);
   }
 
-  @Get(':id/demandas')
-  @ApiOperation({ summary: 'Obtener demandas de la estrategia (pendiente)' })
+  @Get(':id/viabilidad-sencilla')
+  @ApiOperation({ summary: 'Calcular viabilidad sencilla de la estrategia' })
   @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
-  @ApiResponse({ status: 200, description: 'Demandas de la estrategia' })
-  @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async getDemandas(@Param('id') id: string): Promise<any> {
-    // TODO: Implementar cuando tengas relaciones
-    return { message: 'Endpoint pendiente - Relaciones no implementadas' };
+  @ApiResponse({ status: 200, description: 'Resultado del cálculo de viabilidad' })
+  async calcularViabilidadSencilla(@Param('id') id: string): Promise<{
+    estrategiaId: string;
+    nombreEstrategia: string;
+    esViable: boolean;
+    productosSatisfacibles: string[];
+    productosNoSatisfacibles: string[];
+  }> {
+    return this.estrategiaService.calcularViabilidadEstrategiaSencilla(id);
   }
 
-  @Get(':id/calculos')
-  @ApiOperation({ summary: 'Obtener cálculos de la estrategia (pendiente)' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
-  @ApiResponse({ status: 200, description: 'Cálculos de la estrategia' })
-  @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async getCalculos(@Param('id') id: string): Promise<any> {
-    // TODO: Implementar cuando tengas relaciones
-    return { message: 'Endpoint pendiente - Relaciones no implementadas' };
-  }
+
 }

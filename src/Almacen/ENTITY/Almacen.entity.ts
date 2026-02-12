@@ -36,8 +36,4 @@ export class Almacen {
     default: 'activo'  
   })
   estado: string;  
-
-  // Relaciones: LAS AGREGAREMOS DESPUÉS
-  // @OneToMany(() => Inventario, inventario => inventario.almacen)
-  // inventarios: Inventario[];
 }

@@ -38,18 +38,4 @@ export class Demanda {
   @ManyToOne(() => Estrategia, estrategia => estrategia.demandas)
   @JoinColumn({ name: 'ESTRATEGIA_ID' })
   estrategia: Estrategia;
-
-  /*// Métodos de ayuda
-  getDemandaAnualizada(): number {
-    switch (this.periodo) {
-      case 'mensual': return this.cantidadRequerida * 12;
-      case 'trimestral': return this.cantidadRequerida * 4;
-      case 'anual': return this.cantidadRequerida;
-      default: return this.cantidadRequerida;
-    }
-  }
-
-  isEstatica(): boolean {
-    return this.tipoDemanda === 'estática';
-  }*/
 }

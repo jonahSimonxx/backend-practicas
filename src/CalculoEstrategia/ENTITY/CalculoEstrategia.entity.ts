@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToMany } from 
 import { Estrategia } from '../../Estrategia/ENTITY/Estrategia.entity';
 import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
 
-@Entity('CALCULO_ESTRATEGIA') // Verifica el nombre exacto en tu BD
+@Entity('CALCULO_ESTRATEGIA') 
 export class CalculoEstrategia {
   @PrimaryColumn({ type: 'varchar', length: 20 })
   id: string;

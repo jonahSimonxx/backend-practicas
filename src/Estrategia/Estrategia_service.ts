@@ -12,7 +12,6 @@ import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCa
 import { ResultadoCalculoDto } from '../CalculoEstrategia/DTOS/resultado-calculo.dto';
 import { CalculoRequestDto } from '../CalculoEstrategia/DTOS/calculo-request.dto';
 
-// Interfaces para los resultados
 interface InventarioDetalle {
   almacen: string;
   lote: string;
@@ -49,7 +48,6 @@ export class EstrategiaService {
   constructor(
     @InjectRepository(Estrategia)
     private estrategiaRepository: Repository<Estrategia>,
-    // ============ NUEVOS REPOSITORIOS AGREGADOS ============
     @InjectRepository(RelacionProductoRecurso)
     private relacionRepository: Repository<RelacionProductoRecurso>,
     @InjectRepository(Inventario)
@@ -58,7 +56,6 @@ export class EstrategiaService {
     private calculoRepository: Repository<CalculoEstrategia>,
     @InjectRepository(DetalleCalculoRecurso)
     private detalleCalculoRepository: Repository<DetalleCalculoRecurso>,
-    // ============ FIN DE NUEVOS REPOSITORIOS ============
   ) {}
 
   async create(createEstrategiaDto: CreateEstrategiaDto): Promise<EstrategiaDto> {
@@ -186,9 +183,8 @@ export class EstrategiaService {
     };
   }
 
-  // ============ MÉTODO NUEVO: CALCULAR ESTRATEGIA DETALLADA ============
   async calcularEstrategiaDetallada(
-    id: string, // Cambiado de number a string para coincidir con tu código
+    id: string, 
     options?: CalculoRequestDto
   ): Promise<ResultadoCalculoDto> {
     const estrategia = await this.estrategiaRepository
@@ -315,7 +311,6 @@ export class EstrategiaService {
       productos: resultadosProductos,
     };
   }
-  // ============ FIN DEL MÉTODO NUEVO ============
 
   private async cambiarEstado(id: string, nuevoEstado: string): Promise<EstrategiaDto> {
     const estrategia = await this.estrategiaRepository.findOne({ where: { id } });
@@ -329,7 +324,6 @@ export class EstrategiaService {
     return this.mapToDto(updatedEstrategia);
   }
 
-  // ============ MÉTODOS PRIVADOS NUEVOS ============
   private async calcularPresupuestoSimple(resultadosProductos: ResultadoProducto[]): Promise<number> {
     // Implementa tu lógica de cálculo de presupuesto aquí
     // Por ahora retorna 0 como ejemplo
@@ -368,7 +362,6 @@ export class EstrategiaService {
       }
     }
   }
-  // ============ FIN DE MÉTODOS PRIVADOS NUEVOS ============
 
   private mapToDto(estrategia: Estrategia): EstrategiaDto {
     return {
@@ -381,4 +374,87 @@ export class EstrategiaService {
       resultadoCalculo: estrategia.resultadoCalculo,
     };
   }
+
+  async calcularViabilidadEstrategiaSencilla(estrategiaId: string): Promise<{
+    estrategiaId: string;
+    nombreEstrategia: string;
+    esViable: boolean;
+    productosSatisfacibles: string[];
+    productosNoSatisfacibles: string[];
+  }> {
+  // Obtener la estrategia y sus demandas
+  const estrategia = await this.estrategiaRepository.findOne({
+    where: { id: estrategiaId },
+    relations: ['demandas', 'demandas.producto'],
+  });
+
+  if (!estrategia) {
+    throw new NotFoundException(`Estrategia con ID ${estrategiaId} no encontrada`);
+  }
+
+  const resultadosProductos: { productoId: string; esSatisfacible: boolean }[] = [];
+
+  // Evaluar cada producto en la estrategia
+  for (const demanda of estrategia.demandas) {
+    const producto = demanda.producto;
+    // Obtener las relaciones entre el producto y los recursos
+    const relaciones = await this.relacionRepository.find({
+      where: { productoId: producto.id },
+      relations: ['recurso'],
+    });
+
+    let productoEsSatisfacible = true;
+
+    // Verificar cada recurso necesario para el producto
+    for (const relacion of relaciones) {
+      const recurso = relacion.recurso;
+      const cantidadRequeridaTotal = relacion.cantidadRequerida * demanda.cantidadRequerida;
+      // Obtener la existencia total del recurso en el inventario
+      const existenciaTotal = await this.obtenerExistenciaTotalRecurso(recurso.id);
+
+      if (existenciaTotal < cantidadRequeridaTotal) {
+        productoEsSatisfacible = false;
+        break; 
+      }
+    }
+
+    resultadosProductos.push({
+      productoId: producto.id,
+      esSatisfacible: productoEsSatisfacible,
+    });
+  }
+
+  // Evaluar la viabilidad de la estrategia
+  const estrategiaEsViable = resultadosProductos.every(p => p.esSatisfacible);
+
+  // Separar productos satisfacibles y no satisfacibles
+  const productosSatisfacibles = resultadosProductos
+    .filter(p => p.esSatisfacible)
+    .map(p => p.productoId);
+
+  const productosNoSatisfacibles = resultadosProductos
+    .filter(p => !p.esSatisfacible)
+    .map(p => p.productoId);
+
+  // Devolver el resultado
+  return {
+    estrategiaId: estrategia.id,
+    nombreEstrategia: estrategia.nombre,
+    esViable: estrategiaEsViable,
+    productosSatisfacibles,
+    productosNoSatisfacibles,
+  };
+}
+
+
+async obtenerExistenciaTotalRecurso(recursoId: string): Promise<number> {
+  const inventarios = await this.inventarioRepository.find({
+    where: { recursoId, estado: 'disponible' },
+  });
+
+  return inventarios.reduce((total, inventario) => total + inventario.cantidadDisponible, 0);
+}
+
+
+
 }
