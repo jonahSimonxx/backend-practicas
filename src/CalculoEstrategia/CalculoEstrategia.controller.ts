@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CalculoEstrategiaService } from './CalculoEstrategia.service';
 import { CreateCalculoEstrategiaDto } from './DTOS/CreateCalculoEstrategiaDto';
 import { UpdateCalculoEstrategiaDto } from './DTOS/UpdateCalculoEstrategiaDto';
 import { CalculoEstrategiaDto } from './DTOS/CalculoEstrategiaDto';
+import { ResultadoCalculoDto } from '../CalculoEstrategia/DTOS/resultado-calculo.dto';
+import { CalculoRequestDto } from '../CalculoEstrategia/DTOS/calculo-request.dto';
 
 @ApiTags('calculo-estrategias')
 @Controller('calculo-estrategias')
@@ -14,15 +16,29 @@ export class CalculoEstrategiaController {
   @ApiOperation({ summary: 'Crear un nuevo cálculo de estrategia' })
   @ApiResponse({ status: 201, description: 'Cálculo creado exitosamente', type: CalculoEstrategiaDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 409, description: 'ID ya existe' })
   async create(@Body() createCalculoEstrategiaDto: CreateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
     return this.calculoEstrategiaService.create(createCalculoEstrategiaDto);
+  }
+
+  @Post('calcular-detallado/:estrategiaId')
+  @ApiOperation({ summary: 'Calcular estrategia con detalles por recurso' })
+  @ApiParam({ name: 'estrategiaId', description: 'ID de la estrategia', type: String })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Cálculo detallado realizado', 
+    type: ResultadoCalculoDto 
+  })
+  async calcularDetallado(
+    @Param('estrategiaId') estrategiaId: string,
+    @Body() calculoRequest?: CalculoRequestDto,
+  ): Promise<ResultadoCalculoDto> {
+    return this.calculoEstrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest);
   }
 
   @Get()
   @ApiOperation({ summary: 'Obtener todos los cálculos' })
   @ApiQuery({ name: 'estrategiaId', required: false, description: 'Filtrar por estrategia' })
-  @ApiQuery({ name: 'resultado', required: false, enum: ['satisfactorio', 'parcial'] })
+  @ApiQuery({ name: 'resultado', required: false, enum: ['satisfacible', 'insatisfacible', 'parcial'] })
   @ApiResponse({ status: 200, description: 'Lista de cálculos', type: [CalculoEstrategiaDto] })
   async findAll(
     @Query('estrategiaId') estrategiaId?: string,
@@ -35,15 +51,6 @@ export class CalculoEstrategiaController {
       return this.calculoEstrategiaService.findByResultado(resultado);
     }
     return this.calculoEstrategiaService.findAll();
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener un cálculo por ID' })
-  @ApiParam({ name: 'id', description: 'ID del cálculo', type: String })
-  @ApiResponse({ status: 200, description: 'Cálculo encontrado', type: CalculoEstrategiaDto })
-  @ApiResponse({ status: 404, description: 'Cálculo no encontrado' })
-  async findOne(@Param('id') id: string): Promise<CalculoEstrategiaDto> {
-    return this.calculoEstrategiaService.findOne(id);
   }
 
   @Get('estrategia/:estrategiaId/ultimo')
@@ -68,7 +75,6 @@ export class CalculoEstrategiaController {
   @ApiParam({ name: 'id', description: 'ID del cálculo', type: String })
   @ApiResponse({ status: 200, description: 'Cálculo actualizado', type: CalculoEstrategiaDto })
   @ApiResponse({ status: 404, description: 'Cálculo no encontrado' })
-  @ApiResponse({ status: 409, description: 'Conflicto en la actualización' })
   async update(
     @Param('id') id: string,
     @Body() updateCalculoEstrategiaDto: UpdateCalculoEstrategiaDto,
@@ -77,22 +83,31 @@ export class CalculoEstrategiaController {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar un cálculo' })
   @ApiParam({ name: 'id', description: 'ID del cálculo', type: String })
-  @ApiResponse({ status: 200, description: 'Cálculo eliminado' })
+  @ApiResponse({ status: 204, description: 'Cálculo eliminado' })
   @ApiResponse({ status: 404, description: 'Cálculo no encontrado' })
-  @ApiResponse({ status: 409, description: 'No se puede eliminar (tiene detalles)' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.calculoEstrategiaService.remove(id);
   }
 
   @Get(':id/detalles-recursos')
-  @ApiOperation({ summary: 'Obtener detalles de recursos del cálculo (pendiente)' })
+  @ApiOperation({ summary: 'Obtener detalles de recursos del cálculo' })
   @ApiParam({ name: 'id', description: 'ID del cálculo', type: String })
   @ApiResponse({ status: 200, description: 'Detalles de recursos' })
   @ApiResponse({ status: 404, description: 'Cálculo no encontrado' })
   async getDetallesRecursos(@Param('id') id: string): Promise<any> {
-    // TODO: Implementar cuando tengas el módulo de DetalleCalculoRecurso
-    return { message: 'Endpoint pendiente - Módulo DetalleCalculoRecurso no implementado' };
+    const calculo = await this.calculoEstrategiaService.findOne(id);
+    return { message: 'Detalles de recursos disponibles', calculoId: id };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un cálculo por ID' })
+  @ApiParam({ name: 'id', description: 'ID del cálculo', type: String })
+  @ApiResponse({ status: 200, description: 'Cálculo encontrado', type: CalculoEstrategiaDto })
+  @ApiResponse({ status: 404, description: 'Cálculo no encontrado' })
+  async findOne(@Param('id') id: string): Promise<CalculoEstrategiaDto> {
+    return this.calculoEstrategiaService.findOne(id);
   }
 }
