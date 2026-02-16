@@ -4,7 +4,7 @@ import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/Detall
 
 @Entity('CALCULO_ESTRATEGIA') 
 export class CalculoEstrategia {
-  @PrimaryColumn({ type: 'varchar', length: 20 })
+  @PrimaryColumn({ name: 'ID', type: 'varchar', length: 20 })
   id: string;
 
   @Column({ name: 'ESTRATEGIA_ID', type: 'varchar', length: 20 })

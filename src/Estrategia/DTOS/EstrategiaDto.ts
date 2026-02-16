@@ -16,12 +16,12 @@ export class EstrategiaDto {
   @ApiProperty({ description: 'Presupuesto máximo', example: 50000.00, required: true })
   presupuestoMaximo: number;
 
-  @ApiProperty({ description: 'Estado', enum: ['activo', 'inactivo'], example: 'activo', required: true })
+  @ApiProperty({ description: 'Estado', enum: ['activa', 'inactiva'], example: 'activa', required: true })
   estado: string;
 
   @ApiProperty({ 
     description: 'Resultado del último cálculo', 
-    enum: ['posible', 'imposible'],
+    enum: ['posible', 'imposible', 'sin calcular'],
     example: 'posible',
     required: true
   })

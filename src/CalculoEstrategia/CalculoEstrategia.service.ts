@@ -120,11 +120,6 @@ export class CalculoEstrategiaService {
       throw new NotFoundException(`Cálculo con ID ${id} no encontrado`);
     }
 
-    // FUTURO: Validar que no tenga detalles de recursos
-    // if (calculo.detallesRecursos && calculo.detallesRecursos.length > 0) {
-    //   throw new ConflictException(`No se puede eliminar el cálculo ${id} porque tiene detalles de recursos`);
-    // }
-
     const result = await this.calculoEstrategiaRepository.delete(id);
     
     if (result.affected === 0) {
@@ -144,8 +139,6 @@ export class CalculoEstrategiaService {
         tendencia: 'sin datos'
       };
     }
-
-    // calcularEstrategiaDetallada delegada a EstrategiaService (disponible vía módulo importado)
   }
 
   async calcularEstrategiaDetallada(estrategiaId: string, calculoRequest?: CalculoRequestDto): Promise<ResultadoCalculoDto> {

@@ -23,7 +23,7 @@ export class InventarioController {
   @ApiOperation({ summary: 'Obtener todos los inventarios' })
   @ApiQuery({ name: 'recursoId', required: false, description: 'Filtrar por recurso' })
   @ApiQuery({ name: 'almacenId', required: false, description: 'Filtrar por almacén' })
-  @ApiQuery({ name: 'estado', required: false, enum: ['disponible', 'resarvado'] })
+  @ApiQuery({ name: 'estado', required: false, enum: ['disponible', 'reservado'] })
   @ApiQuery({ name: 'fabricante', required: false, description: 'Filtrar por fabricante' })
   @ApiQuery({ name: 'caducados', required: false, description: 'Solo caducados', type: Boolean })
   @ApiQuery({ name: 'porCaducar', required: false, description: 'Próximos a caducar (días)', type: Number })
@@ -76,14 +76,6 @@ export class InventarioController {
     return { total };
   }
 
-  @Get('almacen/:almacenId/estadisticas')
-  @ApiOperation({ summary: 'Obtener estadísticas de un almacén' })
-  @ApiParam({ name: 'almacenId', description: 'ID del almacén', type: String })
-  @ApiResponse({ status: 200, description: 'Estadísticas del almacén' })
-  async getEstadisticasAlmacen(@Param('almacenId') almacenId: string): Promise<any> {
-    return this.inventarioService.getEstadisticasAlmacen(almacenId);
-  }
-
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar un inventario' })
   @ApiParam({ name: 'id', description: 'ID del inventario', type: String })
@@ -95,31 +87,6 @@ export class InventarioController {
     @Body() updateInventarioDto: UpdateInventarioDto,
   ): Promise<InventarioDto> {
     return this.inventarioService.update(id, updateInventarioDto);
-  }
-
-  @Put(':id/reservar')
-  @ApiOperation({ summary: 'Reservar cantidad del inventario' })
-  @ApiParam({ name: 'id', description: 'ID del inventario', type: String })
-  @ApiResponse({ status: 200, description: 'Inventario reservado', type: InventarioDto })
-  @ApiResponse({ status: 400, description: 'Cantidad insuficiente' })
-  @ApiResponse({ status: 404, description: 'Inventario no encontrado' })
-  async reservar(
-    @Param('id') id: string,
-    @Body('cantidad') cantidad: number
-  ): Promise<InventarioDto> {
-    return this.inventarioService.reservar(id, cantidad);
-  }
-
-  @Put(':id/liberar')
-  @ApiOperation({ summary: 'Liberar cantidad del inventario' })
-  @ApiParam({ name: 'id', description: 'ID del inventario', type: String })
-  @ApiResponse({ status: 200, description: 'Inventario liberado', type: InventarioDto })
-  @ApiResponse({ status: 404, description: 'Inventario no encontrado' })
-  async liberar(
-    @Param('id') id: string,
-    @Body('cantidad') cantidad: number
-  ): Promise<InventarioDto> {
-    return this.inventarioService.liberar(id, cantidad);
   }
 
   @Delete(':id')

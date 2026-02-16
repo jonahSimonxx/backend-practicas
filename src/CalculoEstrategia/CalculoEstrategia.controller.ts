@@ -38,7 +38,7 @@ export class CalculoEstrategiaController {
   @Get()
   @ApiOperation({ summary: 'Obtener todos los cálculos' })
   @ApiQuery({ name: 'estrategiaId', required: false, description: 'Filtrar por estrategia' })
-  @ApiQuery({ name: 'resultado', required: false, enum: ['satisfacible', 'insatisfacible', 'parcial'] })
+  @ApiQuery({ name: 'resultado', required: false, enum: ['satisfactorio', 'parcial'] })
   @ApiResponse({ status: 200, description: 'Lista de cálculos', type: [CalculoEstrategiaDto] })
   async findAll(
     @Query('estrategiaId') estrategiaId?: string,

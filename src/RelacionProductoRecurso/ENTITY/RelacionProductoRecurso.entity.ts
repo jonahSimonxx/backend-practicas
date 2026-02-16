@@ -4,7 +4,7 @@ import { Recurso } from '../../Recurso/ENTITY/Recurso.entity';
 
 @Entity('RELACION_PRODUCTO_RECURSO')
 export class RelacionProductoRecurso {
-  @PrimaryColumn({ type: 'varchar', length: 20 })
+  @PrimaryColumn({ name: 'ID', type: 'varchar', length: 20 })
   id: string;
 
   @Column({ name: 'PRODUCTO_ID', type: 'varchar', length: 20 })

@@ -4,6 +4,7 @@ import { Inventario } from '../../Inventario/ENTITY/Inventario.entity';
 @Entity('ALMACEN') 
 export class Almacen {
   @PrimaryColumn({ 
+    name: "ID",
     type: 'varchar', 
     length: 20  
   })

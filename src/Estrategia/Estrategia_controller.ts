@@ -32,28 +32,24 @@ export class EstrategiaController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener todas las estrategias' })
-  @ApiQuery({ name: 'estado', required: false, enum: ['activo', 'inactivo'] })
-  @ApiQuery({ name: 'resultado', required: false, enum: ['posible', 'imposible'] })
+  @ApiQuery({ name: 'id', required: false, description: 'ID de la estrategia' })
+  @ApiQuery({ name: 'estado', required: false, enum: ['activa', 'inactiva'] })
+  @ApiQuery({ name: 'resultado', required: false, enum: ['posible', 'imposible', 'sin calcular'] })
   @ApiResponse({ status: 200, description: 'Lista de estrategias', type: [EstrategiaDto] })
   async findAll(
+    @Query('id') id?: string,
     @Query('estado') estado?: string,
     @Query('resultado') resultado?: string
   ): Promise<EstrategiaDto[]> {
+    if (id){
+      return this.estrategiaService.findById(id);
+    }
     if (estado) {
       return this.estrategiaService.findByEstado(estado);
-    }
-    if (resultado) {
-      return this.estrategiaService.findByResultadoCalculo(resultado);
     }
     return this.estrategiaService.findAll();
   }
 
-  @Get('estadisticas')
-  @ApiOperation({ summary: 'Obtener estadísticas de estrategias' })
-  @ApiResponse({ status: 200, description: 'Estadísticas generales' })
-  async getEstadisticas(): Promise<any> {
-    return this.estrategiaService.getEstadisticas();
-  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una estrategia por ID' })

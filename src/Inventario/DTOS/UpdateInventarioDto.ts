@@ -45,7 +45,7 @@ export class UpdateInventarioDto extends PartialType(CreateInventarioDto) {
 
   @ApiProperty({ 
     description: 'Nueva fecha de caducidad', 
-    example: '2025-06-15T10:30:00Z',
+    example: '2025-06-15',
     required: false
   })
   @Type(() => Date)
@@ -55,12 +55,30 @@ export class UpdateInventarioDto extends PartialType(CreateInventarioDto) {
 
   @ApiProperty({ 
     description: 'Nueva fecha de vigencia', 
-    example: '2025-06-15T10:30:00Z',
+    example: '2025-06-15',
     required: false
   })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
   fechaVigencia?: Date;
+
+  @ApiProperty({ 
+    description: 'Unidad de medida', 
+    example: 'mg',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  unidadMedida?: string;
+
+  @ApiProperty({ 
+    description: 'Área de almacenamiento dentro del almacén', 
+    example: 'Zona sur',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  areaAlmacenamiento?: string;
 
 }

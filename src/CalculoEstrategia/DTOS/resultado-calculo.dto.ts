@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-class InventarioDetalleDto {
+export class InventarioDetalleDto {
   @ApiProperty()
   almacen: string;
   
@@ -23,7 +23,7 @@ class InventarioDetalleDto {
   unidadMedida: string;
 }
 
-class ResultadoRecursoDto {
+export class ResultadoRecursoDto {
   @ApiProperty()
   recursoId: string;
   
@@ -37,7 +37,7 @@ class ResultadoRecursoDto {
   unidadMedida: string;
   
   @ApiProperty()
-  criterioRelacion: string;
+  tipoRelacion: string;
   
   @ApiProperty()
   cantidadRequerida: number;
@@ -55,7 +55,7 @@ class ResultadoRecursoDto {
   inventarios: InventarioDetalleDto[];
 }
 
-class ResultadoProductoDto {
+export class ResultadoProductoDto {
   @ApiProperty()
   productoId: string;
   

@@ -4,7 +4,7 @@ import { CalculoEstrategia } from '../../CalculoEstrategia/ENTITY/CalculoEstrate
 
 @Entity('ESTRATEGIA') 
 export class Estrategia {
-  @PrimaryColumn({ type: 'varchar', length: 20 }) 
+  @PrimaryColumn({ name: 'ID', type: 'varchar', length: 20 }) 
   id: string; 
 
   @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
@@ -23,7 +23,7 @@ export class Estrategia {
     name: 'ESTADO',
     type: 'varchar',
     length: 20,
-    default: 'activo'
+    default: 'activa'
   })
   estado: string; 
 
@@ -43,6 +43,6 @@ export class Estrategia {
   calculos: CalculoEstrategia[];
   
   isActiva(): boolean {
-    return this.estado === 'activo';
+    return this.estado === 'activa';
   }
 }

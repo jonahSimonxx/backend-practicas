@@ -50,7 +50,7 @@ export class CreateInventarioDto {
 
   @ApiProperty({ 
     description: 'Fecha de fabricación', 
-    example: '2024-01-15T10:30:00Z',
+    example: '2024-01-15',
     required: true
   })
   @Type(() => Date)
@@ -59,7 +59,7 @@ export class CreateInventarioDto {
 
   @ApiProperty({ 
     description: 'Fecha de caducidad', 
-    example: '2025-01-15T10:30:00Z',
+    example: '2025-01-15',
     required: true
   })
   @Type(() => Date)
@@ -98,12 +98,28 @@ export class CreateInventarioDto {
 
   @ApiProperty({ 
     description: 'Fecha de vigencia', 
-    example: '2025-01-15T10:30:00Z',
+    example: '2025-01-15',
     required: true
   })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
   fechaVigencia: Date;
+
+  @ApiProperty({
+    description: 'Unidad de medida',
+    example: 'mg',
+    required: true
+  })
+  @IsString()
+  unidadMedida: string;
+
+  @ApiProperty({
+    description: 'Área de almacenamiento dentro del almacén',
+    example: 'Zona sur',
+    required: true
+  })
+  @IsString()
+  areaAlmacenamiento: string;
 
 }

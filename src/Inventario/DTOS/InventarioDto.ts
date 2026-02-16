@@ -38,4 +38,11 @@ export class InventarioDto {
     required: true
   })
   estado: string;
+
+  @ApiProperty({ description: 'Unidad de medida', example: 'mg', required: true })
+  unidadMedida: string;
+
+  @ApiProperty({ description: 'Área de almacenamiento dentro del almacén', example: 'Zona sur', required: true })
+  areaAlmacenamiento: string;
+
 }

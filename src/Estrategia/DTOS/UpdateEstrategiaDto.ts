@@ -6,11 +6,11 @@ import { ApiProperty } from '@nestjs/swagger';
 export class UpdateEstrategiaDto extends PartialType(CreateEstrategiaDto) {
   @ApiProperty({ 
     description: 'Resultado del cálculo', 
-    enum: ['posible', 'imposible'],
+    enum: ['posible', 'imposible', 'sin calcular'],
     required: false
   })
   @IsString()
-  @IsIn(['posible', 'imposible'])
+  @IsIn(['posible', 'imposible', 'sin calcular'])
   @IsOptional()
   resultadoCalculo?: string | null;
 
@@ -26,11 +26,11 @@ export class UpdateEstrategiaDto extends PartialType(CreateEstrategiaDto) {
 
   @ApiProperty({ 
     description: 'Nuevo estado', 
-    enum: ['activo', 'inactivo'],
+    enum: ['activa', 'inactiva'],
     required: false
   })
   @IsString()
-  @IsIn(['activo', 'inactivo'])
+  @IsIn(['activa', 'inactiva'])
   @IsOptional()
   estado?: string;
 }

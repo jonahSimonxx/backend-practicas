@@ -29,22 +29,22 @@ export class CreateEstrategiaDto {
 
   @ApiProperty({ 
     description: 'Estado de la estrategia', 
-    enum: ['activo', 'inactivo'], 
-    default: 'activo',
+    enum: ['activa', 'inactiva'], 
+    default: 'activa',
     required: true
   })
   @IsString()
-  @IsIn(['activo', 'inactivo']) 
+  @IsIn(['activa', 'inactiva']) 
   @IsOptional()
   estado?: string;
 
   @ApiProperty({ 
     description: 'Resultado del cálculo inicial', 
-    enum: ['posible', 'imposible'], 
+    enum: ['posible', 'imposible', 'sin calcular'], 
     required: true
   })
   @IsString()
-  @IsIn(['posible', 'imposible'])
+  @IsIn(['posible', 'imposible', 'sin calcular'])
   @IsOptional()
   resultadoCalculo?: string | null;
 }

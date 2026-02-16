@@ -5,5 +5,5 @@ export class CalculoRequestDto {
   usarAlmacenesNoTocar?: boolean;
   
   @ApiProperty({ required: false })
-  priorizarAlmacenes?: string[]; // ['primario', 'secundario']
+  priorizarAlmacenes?: string[]; 
 }

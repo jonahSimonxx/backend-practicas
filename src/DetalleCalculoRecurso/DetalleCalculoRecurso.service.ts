@@ -48,10 +48,6 @@ export class DetalleCalculoRecursoService {
       );
     }
 
-    // FUTURO: Verificar que existan CalculoEstrategia y Recurso
-    // const calculoExiste = await this.calculoService.findOne(createDetalleDto.calculoId);
-    // const recursoExiste = await this.recursoService.findOne(createDetalleDto.recursoId);
-
     const detalle = this.detalleRepository.create(createDetalleDto);
     const savedDetalle = await this.detalleRepository.save(detalle);
     return this.mapToDto(savedDetalle);
@@ -108,9 +104,9 @@ export class DetalleCalculoRecursoService {
     return detalles.map(detalle => this.mapToDto(detalle));
   }
 
-  async findBySatisfaccion(esSatisfacible: boolean): Promise<DetalleCalculoRecursoDto[]> {
+  async findBySatisfaccion(satisfacer: boolean): Promise<DetalleCalculoRecursoDto[]> {
     const detalles = await this.detalleRepository.find({
-      where: { esSatisfacible },
+      where: { satisfacer },
       order: { calculoId: 'ASC' }
     });
     return detalles.map(detalle => this.mapToDto(detalle));
@@ -168,7 +164,7 @@ export class DetalleCalculoRecursoService {
       
       const nuevaCantidadRequerida = updateDetalleDto.cantidadRequeridaTotal ?? detalle.cantidadRequeridaTotal;
       const nuevaCantidadDisponible = updateDetalleDto.cantidadDisponibleTotal ?? detalle.cantidadDisponibleTotal;
-      const nuevoEsSatisfacible = updateDetalleDto.esSatisfacible ?? detalle.esSatisfacible;
+      const nuevoEsSatisfacible = updateDetalleDto.esSatisfacible ?? detalle.satisfacer;
       
       const satisfacerConsistente = 
         (nuevaCantidadDisponible >= nuevaCantidadRequerida) === nuevoEsSatisfacible;
@@ -218,7 +214,7 @@ export class DetalleCalculoRecursoService {
       };
     }
 
-    const satisfacibles = detalles.filter(d => d.esSatisfacible).length;
+    const satisfacibles = detalles.filter(d => d.satisfacer).length;
     const porcentajeSatisfaccion = (satisfacibles / detalles.length) * 100;
 
     return {
@@ -242,7 +238,7 @@ export class DetalleCalculoRecursoService {
       recursoId: detalle.recursoId,
       cantidadRequeridaTotal: detalle.cantidadRequeridaTotal,
       cantidadDisponibleTotal: detalle.cantidadDisponibleTotal,
-      esSatisfacible: detalle.esSatisfacible
+      satisfacer: detalle.satisfacer
     };
   }
 }

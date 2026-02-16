@@ -4,7 +4,7 @@ import { Estrategia } from '../../Estrategia/ENTITY/Estrategia.entity';
 
 @Entity('DEMANDA')
 export class Demanda {
-  @PrimaryColumn({ type: 'varchar', length: 20 })
+  @PrimaryColumn({ name: 'ID', type: 'varchar', length: 20 })
   id: string;
 
   @Column({ name: 'PRODUCTO_ID', type: 'varchar', length: 20 })

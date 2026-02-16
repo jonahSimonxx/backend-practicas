@@ -5,7 +5,7 @@ import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/Detall
 
 @Entity('RECURSO')
 export class Recurso {
-  @PrimaryColumn({ type: 'varchar', length: 20 })
+  @PrimaryColumn({ name: "ID", type: 'varchar', length: 20 })
   id: string;
 
   @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
@@ -23,9 +23,6 @@ export class Recurso {
 
   @Column({ name: 'DESCRIPCION', type: 'text', nullable: true })
   descripcion: string;
-
-  @Column({ name: 'CRITERIO_RELACION', type: 'varchar', length: 50, nullable: true })
-  criterioRelacion: string;
 
   // ========== RELACIONES ==========
   @OneToMany(() => RelacionProductoRecurso, relacion => relacion.recurso)

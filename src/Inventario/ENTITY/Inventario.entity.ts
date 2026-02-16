@@ -4,7 +4,7 @@ import { Almacen } from '../../Almacen/ENTITY/Almacen.entity';
 
 @Entity('INVENTARIO')
 export class Inventario {
-  @PrimaryColumn({ type: 'varchar', length: 20 })
+  @PrimaryColumn({ name: 'ID', type: 'varchar', length: 20 })
   id: string;
 
   @Column({ name: 'RECURSO_ID', type: 'varchar', length: 20 })
@@ -19,10 +19,10 @@ export class Inventario {
   @Column({ name: 'FABRICANTE', type: 'varchar', length: 50 })
   fabricante: string;
 
-  @Column({ name: 'FECHA_FABRICACION', type: 'timestamp without time zone' })
+  @Column({ name: 'FECHA_FABRICACION', type: 'date' })
   fechaFabricacion: Date;
 
-  @Column({ name: 'FECHA_CADUCIDAD', type: 'timestamp without time zone' })
+  @Column({ name: 'FECHA_CADUCIDAD', type: 'date' })
   fechaCaducidad: Date;
 
   @Column({ name: 'CANTIDAD_DISPONIBLE', type: 'numeric', precision: 10, scale: 2 })
@@ -41,6 +41,12 @@ export class Inventario {
 
   @Column({ name: 'FECHA_VIGENCIA', type: 'timestamp without time zone' })
   fechaVigencia: Date;
+
+  @Column({ name: 'UNIDAD_MEDIDA', type: 'varchar'})
+  unidadMedida: string;
+
+  @Column({ name: 'AREA_ALMACENAMIENTO', type: 'varchar'})
+  areaAlmacenamiento: string;
 
   // ========== RELACIONES ==========
   @ManyToOne(() => Recurso, recurso => recurso.inventarios)

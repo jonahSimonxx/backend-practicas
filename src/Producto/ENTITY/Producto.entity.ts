@@ -5,7 +5,7 @@ import { DetalleCalculoRecurso } from '../../DetalleCalculoRecurso/ENTITY/Detall
 
 @Entity('PRODUCTO')
 export class Producto {
-    @PrimaryColumn({ type: 'varchar', length: 20 })
+    @PrimaryColumn({ name: "ID", type: 'varchar', length: 20 })
     id: string;
 
     @Column({ name: 'NOMBRE', type: 'varchar', length: 50 })
@@ -39,7 +39,4 @@ export class Producto {
   
     @OneToMany(() => RelacionProductoRecurso, relacion => relacion.producto)
     relacionesRecursos: RelacionProductoRecurso[];
-
-    @OneToMany(() => DetalleCalculoRecurso, detalle => detalle.producto)
-    detallesCalculo: DetalleCalculoRecurso[];
 }
