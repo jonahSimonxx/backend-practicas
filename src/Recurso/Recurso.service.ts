@@ -5,12 +5,16 @@ import { Recurso } from './ENTITY/Recurso.entity';
 import { CreateRecursoDto } from './DTOS/CreateRecursoDto';
 import { UpdateRecursoDto } from './DTOS/UpdateRecursoDto';
 import { RecursoDto } from './DTOS/RecursoDto';
+import { ExistenciaRecursoDto, DetalleInventarioDto } from './DTOS/ExistenciaRecursoDto';
+import { Inventario } from '../Inventario/ENTITY/Inventario.entity';
 
 @Injectable()
 export class RecursoService {
   constructor(
     @InjectRepository(Recurso)
     private recursoRepository: Repository<Recurso>,
+    @InjectRepository(Inventario)
+    private inventarioRepository: Repository<Inventario>,
   ) {}
 
   async create(createRecursoDto: CreateRecursoDto): Promise<RecursoDto> {
@@ -112,6 +116,60 @@ export class RecursoService {
     });
     
     return recursos.map(recurso => this.mapToDto(recurso));
+  }
+     //segunda funcion  nestyyyyyyyyyyyyyyyyy
+  async visualizarExistenciasRecurso(recursoId: string): Promise<ExistenciaRecursoDto> {
+    // Obtener el recurso
+    const recurso = await this.recursoRepository.findOne({
+      where: { id: recursoId }
+    });
+
+    if (!recurso) {
+      throw new NotFoundException(`Recurso con ID ${recursoId} no encontrado`);
+    }
+
+    // Obtener todos los inventarios del recurso
+    const inventarios = await this.inventarioRepository.find({
+      where: { recursoId },
+      relations: ['almacen'],
+      order: { id: 'ASC' }
+    });
+
+    // Calcular totales
+    const cantidadTotalDisponible = inventarios
+      .filter(inv => inv.estado === 'disponible')
+      .reduce((sum, inv) => sum + inv.cantidadDisponible, 0);
+
+    const cantidadTotal = inventarios.reduce((sum, inv) => sum + inv.cantidadDisponible, 0);
+    const numeroMovimientos = inventarios.length;
+
+    // Mapear inventarios a DTO
+    const existencias = inventarios.map(inv => ({
+      inventarioId: inv.id,
+      almacenId: inv.almacenId,
+      areaAlmacenamiento: inv.areaAlmacenamiento,
+      numeroMuestreo: inv.numeroMuestreo,
+      fabricante: inv.fabricante,
+      fechaFabricacion: inv.fechaFabricacion,
+      fechaCaducidad: inv.fechaCaducidad,
+      fechaVigencia: inv.fechaVigencia,
+      lote: inv.lote,
+      cantidadDisponible: inv.cantidadDisponible,
+      unidadMedida: inv.unidadMedida,
+      estado: inv.estado,
+      esCaducado: inv.isCaducado() // Usar el método de la entidad para verificar si está caducado
+    } as DetalleInventarioDto));
+
+    return {
+      recursoId: recurso.id,
+      nombreRecurso: recurso.nombre,
+      tipoRecurso: recurso.tipoRecurso,
+      unidadMedida: recurso.unidadMedida,
+      cantidadTotalDisponible,
+      cantidadTotal,
+      numeroMovimientos,
+      existencias
+    };
   }
 
   private mapToDto(recurso: Recurso): RecursoDto {

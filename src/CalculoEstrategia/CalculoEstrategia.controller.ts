@@ -28,9 +28,11 @@ export class CalculoEstrategiaController {
     description: 'Cálculo detallado realizado', 
     type: ResultadoCalculoDto 
   })
+  @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
+  @ApiResponse({ status: 500, description: 'Error en el cálculo' })
   async calcularDetallado(
     @Param('estrategiaId') estrategiaId: string,
-    @Body() calculoRequest?: CalculoRequestDto,
+    @Body() calculoRequest: CalculoRequestDto = {},
   ): Promise<ResultadoCalculoDto> {
     return this.calculoEstrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest);
   }

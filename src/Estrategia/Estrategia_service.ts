@@ -21,6 +21,20 @@ interface InventarioDetalle {
   cantidad: number;
   unidadMedida: string;
 }
+// interfaz segunda funcion
+interface ExistenciaDetalle {
+  almacen: string;
+  bdInventario: string;      // ID o nombre de la BD
+  area: string;              // área de almacenamiento
+  numeroMuestreo: string;    // número de muestreo
+  fabricante: string;
+  fechaFabricacion: Date;
+  fechaCaducidad: Date;
+  fechaVigencia: Date;
+  lote: string;
+  cantidad: number;
+  unidadMedida: string;
+}
 
 @Injectable()
 export class EstrategiaService {
@@ -149,12 +163,10 @@ export class EstrategiaService {
     id: string,
     options?: CalculoRequestDto
   ): Promise<ResultadoCalculoDto> {
-    const estrategia = await this.estrategiaRepository
-      .createQueryBuilder('estrategia')
-      .leftJoinAndSelect('estrategia.demandas', 'demandas')
-      .leftJoinAndSelect('demandas.producto', 'producto')
-      .where('estrategia.id = :id', { id })
-      .getOne();
+    const estrategia = await this.estrategiaRepository.findOne({
+      where: { id },
+      relations: ['demandas', 'demandas.producto'],
+    });
 
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
@@ -164,11 +176,10 @@ export class EstrategiaService {
 
     for (const demanda of estrategia.demandas || []) {
       const producto = demanda.producto;
-      const relaciones = await this.relacionRepository
-        .createQueryBuilder('relacion')
-        .leftJoinAndSelect('relacion.recurso', 'recurso')
-        .where('relacion.productoId = :productoId', { productoId: producto.id })
-        .getMany();
+      const relaciones = await this.relacionRepository.find({
+        where: { productoId: producto.id },
+        relations: ['recurso'],
+      });
 
       const recursosResultados: ResultadoRecursoDto[] = [];
 
@@ -194,7 +205,7 @@ export class EstrategiaService {
           esSatisfacible,
           deficit,
           inventarios: inventariosDetalle.map(i => ({
-            almacen: i.almacen.toString(),
+            almacen: i.almacenId.toString(),
             lote: i.lote.toString(),
             fabricante: i.fabricante,
             fechaFabricacion: i.fechaFabricacion,

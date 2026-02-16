@@ -4,6 +4,7 @@ import { RecursoService } from './Recurso.service';
 import { CreateRecursoDto } from './DTOS/CreateRecursoDto';
 import { UpdateRecursoDto } from './DTOS/UpdateRecursoDto';
 import { RecursoDto } from './DTOS/RecursoDto';
+import { ExistenciaRecursoDto } from './DTOS/ExistenciaRecursoDto';
 
 @ApiTags('recursos')
 @Controller('recursos')
@@ -49,6 +50,15 @@ export class RecursoController {
   @ApiResponse({ status: 404, description: 'Recurso no encontrado' })
   async findOne(@Param('id') id: string): Promise<RecursoDto> {
     return this.recursoService.findOne(id);
+  }
+
+  @Get(':id/existencias')
+  @ApiOperation({ summary: 'Visualizar todas las existencias de un recurso con detalles completos' })
+  @ApiParam({ name: 'id', description: 'ID del recurso', type: String })
+  @ApiResponse({ status: 200, description: 'Existencias del recurso con detalles', type: ExistenciaRecursoDto })
+  @ApiResponse({ status: 404, description: 'Recurso no encontrado' })
+  async visualizarExistenciasRecurso(@Param('id') id: string): Promise<ExistenciaRecursoDto> {
+    return this.recursoService.visualizarExistenciasRecurso(id);
   }
 
   @Patch(':id')
