@@ -24,9 +24,9 @@ interface InventarioDetalle {
 // interfaz segunda funcion
 interface ExistenciaDetalle {
   almacen: string;
-  bdInventario: string;      // ID o nombre de la BD
-  area: string;              // área de almacenamiento
-  numeroMuestreo: string;    // número de muestreo
+  bdInventario: string;      
+  area: string;              
+  numeroMuestreo: string;   
   fabricante: string;
   fechaFabricacion: Date;
   fechaCaducidad: Date;
