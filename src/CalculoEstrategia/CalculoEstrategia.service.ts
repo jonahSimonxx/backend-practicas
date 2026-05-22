@@ -140,7 +140,7 @@ export class CalculoEstrategiaService {
       };
     }
   }
-
+//////////////nesty 1
   async calcularEstrategiaDetallada(estrategiaId: string, calculoRequest?: CalculoRequestDto): Promise<ResultadoCalculoDto> {
     return this.estrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest);
   }

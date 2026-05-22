@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RelacionProductoRecurso } from './ENTITY/RelacionProductoRecurso.entity';
 import { CreateRelacionProductoRecursoDto } from './DTOS/CreateRelacionProductoRecursoDto';
 import { UpdateRelacionProductoRecursoDto } from './DTOS/UpdateRelacionProductoRecursoDto';
 import { RelacionProductoRecursoDto } from './DTOS/RelacionProductoRecursoDto';
+
+const TIPOS_RELACION_VALIDOS = ['consumo', 'producción'];
 
 @Injectable()
 export class RelacionProductoRecursoService {
@@ -14,6 +16,10 @@ export class RelacionProductoRecursoService {
   ) {}
 
   async create(createRelacionDto: CreateRelacionProductoRecursoDto): Promise<RelacionProductoRecursoDto> {
+    if (!TIPOS_RELACION_VALIDOS.includes(createRelacionDto.tipoRelacion)) {
+      throw new BadRequestException(`tipoRelacion inválido. Valores permitidos: ${TIPOS_RELACION_VALIDOS.join(', ')}`);
+    }
+
     // Verificar si ya existe una relación con ese ID
     const existente = await this.relacionRepository.findOne({
       where: { id: createRelacionDto.id }
@@ -106,6 +112,10 @@ export class RelacionProductoRecursoService {
     
     if (!relacion) {
       throw new NotFoundException(`Relación con ID ${id} no encontrada`);
+    }
+
+    if (updateRelacionDto.tipoRelacion && !TIPOS_RELACION_VALIDOS.includes(updateRelacionDto.tipoRelacion)) {
+      throw new BadRequestException(`tipoRelacion inválido. Valores permitidos: ${TIPOS_RELACION_VALIDOS.join(', ')}`);
     }
 
     // No permitir modificar el ID
