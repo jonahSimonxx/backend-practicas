@@ -23,13 +23,13 @@ export class UpdateInventarioDto extends PartialType(CreateInventarioDto) {
   @IsOptional()
   numeroMuestreo?: number;
 
-  @ApiProperty({ 
-    description: 'Nuevo estado', 
-    enum: ['disponible', 'resarvado'],
-    required: false
+  @ApiProperty({
+    description: 'Nuevo estado',
+    enum: ['disponible', 'reservado'],
+    required: false,
   })
   @IsString()
-  @IsIn(['disponible', 'resarvado'])
+  @IsIn(['disponible', 'reservado'])
   @IsOptional()
   estado?: string;
 

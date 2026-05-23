@@ -10,6 +10,7 @@ import { Almacen } from '../Almacen/ENTITY/Almacen.entity';
 import { Inventario } from '../Inventario/ENTITY/Inventario.entity';
 import { CalculoEstrategia } from '../CalculoEstrategia/ENTITY/CalculoEstrategia.entity';
 import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
+import { User } from '../Auth/ENTITY/User.entity';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCa
           Inventario,
           CalculoEstrategia,
           DetalleCalculoRecurso,
+          User,
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',

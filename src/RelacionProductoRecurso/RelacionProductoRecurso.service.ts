@@ -5,6 +5,8 @@ import { RelacionProductoRecurso } from './ENTITY/RelacionProductoRecurso.entity
 import { CreateRelacionProductoRecursoDto } from './DTOS/CreateRelacionProductoRecursoDto';
 import { UpdateRelacionProductoRecursoDto } from './DTOS/UpdateRelacionProductoRecursoDto';
 import { RelacionProductoRecursoDto } from './DTOS/RelacionProductoRecursoDto';
+import { Producto } from '../Producto/ENTITY/Producto.entity';
+import { Recurso } from '../Recurso/ENTITY/Recurso.entity';
 
 const TIPOS_RELACION_VALIDOS = ['consumo', 'producción'];
 
@@ -13,6 +15,10 @@ export class RelacionProductoRecursoService {
   constructor(
     @InjectRepository(RelacionProductoRecurso)
     private relacionRepository: Repository<RelacionProductoRecurso>,
+    @InjectRepository(Producto)
+    private productoRepository: Repository<Producto>,
+    @InjectRepository(Recurso)
+    private recursoRepository: Repository<Recurso>,
   ) {}
 
   async create(createRelacionDto: CreateRelacionProductoRecursoDto): Promise<RelacionProductoRecursoDto> {
@@ -43,9 +49,21 @@ export class RelacionProductoRecursoService {
       );
     }
 
-    // FUTURO: Verificar que existan Producto y Recurso
-    // const productoExiste = await this.productoService.findOne(createRelacionDto.productoId);
-    // const recursoExiste = await this.recursoService.findOne(createRelacionDto.recursoId);
+    // Validar que exista el Producto
+    const productoExiste = await this.productoRepository.findOne({
+      where: { id: createRelacionDto.productoId }
+    });
+    if (!productoExiste) {
+      throw new NotFoundException('Producto no existe');
+    }
+
+    // Validar que exista el Recurso
+    const recursoExiste = await this.recursoRepository.findOne({
+      where: { id: createRelacionDto.recursoId }
+    });
+    if (!recursoExiste) {
+      throw new NotFoundException('Recurso no existe');
+    }
 
     const relacion = this.relacionRepository.create(createRelacionDto);
     const savedRelacion = await this.relacionRepository.save(relacion);
@@ -109,7 +127,7 @@ export class RelacionProductoRecursoService {
 
   async update(id: string, updateRelacionDto: UpdateRelacionProductoRecursoDto): Promise<RelacionProductoRecursoDto> {
     const relacion = await this.relacionRepository.findOne({ where: { id } });
-    
+
     if (!relacion) {
       throw new NotFoundException(`Relación con ID ${id} no encontrada`);
     }
@@ -126,10 +144,10 @@ export class RelacionProductoRecursoService {
     // Si se cambia productoId o recursoId, verificar que no exista ya esa combinación
     if ((updateRelacionDto.productoId && updateRelacionDto.productoId !== relacion.productoId) ||
         (updateRelacionDto.recursoId && updateRelacionDto.recursoId !== relacion.recursoId)) {
-      
+
       const nuevoProductoId = updateRelacionDto.productoId || relacion.productoId;
       const nuevoRecursoId = updateRelacionDto.recursoId || relacion.recursoId;
-      
+
       const relacionExistente = await this.relacionRepository.findOne({
         where: {
           productoId: nuevoProductoId,
@@ -157,7 +175,7 @@ export class RelacionProductoRecursoService {
     }
 
     const result = await this.relacionRepository.delete(id);
-    
+
     if (result.affected === 0) {
       throw new NotFoundException(`Relación con ID ${id} no encontrada`);
     }
@@ -165,17 +183,17 @@ export class RelacionProductoRecursoService {
 
   async getRequerimientosParaProducto(productoId: string, cantidad: number): Promise<any> {
     const relaciones = await this.findByProducto(productoId);
-    
+
     const requerimientos = relaciones.map(relacion => ({
       recursoId: relacion.recursoId,
       cantidadRequeridaPorUnidad: relacion.cantidadRequerida,
-      cantidadTotalRequerida: relacion.cantidadRequerida * cantidad,
+      cantidadTotalRequerida: relacion.cantidadRequerida * Number(cantidad),
       tipoRelacion: relacion.tipoRelacion
     }));
 
     return {
       productoId,
-      cantidadSolicitada: cantidad,
+      cantidadSolicitada: Number(cantidad),
       totalRecursos: relaciones.length,
       requerimientos,
       totalConsumo: requerimientos

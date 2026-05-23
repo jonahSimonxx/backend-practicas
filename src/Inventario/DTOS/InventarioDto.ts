@@ -25,17 +25,17 @@ export class InventarioDto {
   @ApiProperty({ description: 'Cantidad disponible', example: 1000.50, required: true })
   cantidadDisponible: number;
 
-  @ApiProperty({ description: 'Fecha de vigencia', example: '2025-01-15', required: true })
-  fechaVigencia: Date;
+  @ApiProperty({ description: 'Fecha de vigencia', example: '2025-01-15', required: false, nullable: true })
+  fechaVigencia: Date | null;
 
   @ApiProperty({ description: 'Número de muestreo', example: 1234, required: true })
   numeroMuestreo: number;
 
-  @ApiProperty({ 
-    description: 'Estado', 
-    enum: ['disponible', 'resarvado'],
+  @ApiProperty({
+    description: 'Estado',
+    enum: ['disponible', 'reservado'],
     example: 'disponible',
-    required: true
+    required: true,
   })
   estado: string;
 

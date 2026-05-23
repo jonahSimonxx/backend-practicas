@@ -20,6 +20,6 @@ import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCa
   ],
   controllers: [EstrategiaController],
   providers: [EstrategiaService],
-  exports: [EstrategiaService, TypeOrmModule],
+  exports: [EstrategiaService],
 })
 export class EstrategiasModule {}

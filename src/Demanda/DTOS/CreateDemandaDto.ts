@@ -1,60 +1,61 @@
 import { IsString, IsNumber, IsIn, Min, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { PeriodoEnum } from '../../common/enums/periodo.enum';
 
 export class CreateDemandaDto {
-  @ApiProperty({ 
-    description: 'ID único de la demanda', 
+  @ApiProperty({
+    description: 'ID único de la demanda',
     example: 'DEM-001',
-    required: true
+    required: true,
   })
   @IsString()
   @Length(1, 20)
   id: string;
 
-  @ApiProperty({ 
-    description: 'ID del producto relacionado', 
+  @ApiProperty({
+    description: 'ID del producto relacionado',
     example: 'PROD-001',
-    required: true
+    required: true,
   })
   @IsString()
   @Length(1, 20)
   productoId: string;
 
-  @ApiProperty({ 
-    description: 'ID de la estrategia relacionada', 
+  @ApiProperty({
+    description: 'ID de la estrategia relacionada',
     example: 'EST-001',
-    required: true
+    required: true,
   })
   @IsString()
   @Length(1, 20)
   estrategiaId: string;
 
-  @ApiProperty({ 
-    description: 'Tipo de demanda', 
+  @ApiProperty({
+    description: 'Tipo de demanda',
     enum: ['estática', 'dinámica'],
     example: 'estática',
-    required: true
+    required: true,
   })
   @IsString()
-  @IsIn(['estática', 'dinámica']) 
+  @IsIn(['estática', 'dinámica'])
   tipoDemanda: string;
 
-  @ApiProperty({ 
-    description: 'Cantidad requerida', 
+  @ApiProperty({
+    description: 'Cantidad requerida',
     example: 1000,
-    required: true
+    required: true,
   })
   @IsNumber()
   @Min(0)
   cantidadRequerida: number;
 
-  @ApiProperty({ 
-    description: 'Periodo de la demanda', 
-    enum: ['mensual', 'trimestral', 'anual'],
-    example: 'mensual',
-    required: true
+  @ApiProperty({
+    description: 'Periodo de la demanda',
+    enum: PeriodoEnum,
+    example: PeriodoEnum.MENSUAL,
+    required: true,
   })
   @IsString()
-  @IsIn(['mensual', 'trimestral', 'anual']) 
-  periodo: string;
+  @IsIn(Object.values(PeriodoEnum))
+  periodo: PeriodoEnum;
 }

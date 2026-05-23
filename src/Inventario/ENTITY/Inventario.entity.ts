@@ -39,8 +39,8 @@ export class Inventario {
   @Column({ name: 'NUMERO_MUESTREO', type: 'numeric', precision: 10, scale: 2 })
   numeroMuestreo: number;
 
-  @Column({ name: 'FECHA_VIGENCIA', type: 'timestamp without time zone' })
-  fechaVigencia: Date;
+  @Column({ name: 'FECHA_VIGENCIA', type: 'timestamp without time zone', nullable: true })
+  fechaVigencia: Date | null;
 
   @Column({ name: 'UNIDAD_MEDIDA', type: 'varchar'})
   unidadMedida: string;
