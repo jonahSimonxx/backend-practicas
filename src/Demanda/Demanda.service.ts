@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Demanda } from './ENTITY/Demanda.entity';
 import { CreateDemandaDto } from './DTOS/CreateDemandaDto';
 import { UpdateDemandaDto } from './DTOS/UpdateDemandaDto';
 import { DemandaDto } from './DTOS/DemandaDto';
+const PERIODOS_VALIDOS = ['diario', 'semanal', 'mensual']; // Ajusta estos valores según tus periodos reales
 
 @Injectable()
 export class DemandaService {
@@ -23,9 +24,11 @@ export class DemandaService {
       throw new ConflictException(`Ya existe una demanda con ID ${createDemandaDto.id}`);
     }
 
-    // FUTURO: Verificar que existan Producto y Estrategia
-    // const productoExiste = await this.productoService.findOne(createDemandaDto.productoId);
-    // const estrategiaExiste = await this.estrategiaService.findOne(createDemandaDto.estrategiaId);
+    if (!PERIODOS_VALIDOS.includes(createDemandaDto.periodo)) {
+      throw new BadRequestException(
+        `periodo inválido. Valores permitidos: ${PERIODOS_VALIDOS.join(', ')}`
+      );
+    }
 
     const demanda = this.demandaRepository.create(createDemandaDto);
     const savedDemanda = await this.demandaRepository.save(demanda);
@@ -88,6 +91,12 @@ export class DemandaService {
     
     if (!demanda) {
       throw new NotFoundException(`Demanda con ID ${id} no encontrada`);
+    }
+
+    if (updateDemandaDto.periodo && !PERIODOS_VALIDOS.includes(updateDemandaDto.periodo)) {
+      throw new BadRequestException(
+        `periodo inválido. Valores permitidos: ${PERIODOS_VALIDOS.join(', ')}`
+      );
     }
 
     // No permitir modificar el ID

@@ -138,9 +138,10 @@ export class RecursoService {
     // Calcular totales
     const cantidadTotalDisponible = inventarios
       .filter(inv => inv.estado === 'disponible')
-      .reduce((sum, inv) => sum + inv.cantidadDisponible, 0);
+      .reduce((sum, inv) => sum + Number(inv.cantidadDisponible), 0);
 
-    const cantidadTotal = inventarios.reduce((sum, inv) => sum + inv.cantidadDisponible, 0);
+    const cantidadTotal = inventarios
+      .reduce((sum, inv) => sum + Number(inv.cantidadDisponible), 0);
     const numeroMovimientos = inventarios.length;
 
     // Mapear inventarios a DTO

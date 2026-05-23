@@ -125,7 +125,10 @@ export class InventarioService {
     const inventarios = await this.inventarioRepository.find({
       where: { recursoId, estado: 'disponible' }
     });
-    return inventarios.reduce((total, inventario) => total + inventario.cantidadDisponible, 0);
+    return inventarios.reduce(
+      (total, inventario) => total + (Number(inventario.cantidadDisponible) || 0),
+      0
+    );
   }
 
   // Actualiza un inventario
