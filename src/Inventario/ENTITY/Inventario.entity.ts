@@ -34,7 +34,7 @@ export class Inventario {
     length: 20,
     default: 'disponible'
   })
-  estado: string; 
+  estado: string = 'disponible'; 
 
   @Column({ name: 'NUMERO_MUESTREO', type: 'numeric', precision: 10, scale: 2 })
   numeroMuestreo: number;
