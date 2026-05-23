@@ -76,14 +76,14 @@ export class CreateInventarioDto {
   @Min(0)
   cantidadDisponible: number;
 
-  @ApiProperty({ 
-    description: 'Estado del inventario', 
+  @ApiProperty({
+    description: 'Estado del inventario',
     enum: ['disponible', 'reservado'],
     default: 'disponible',
-    required: true
+    required: false,
   })
   @IsString()
-  @IsIn(['disponible', 'resarvado']) 
+  @IsIn(['disponible', 'reservado'])
   @IsOptional()
   estado?: string = 'disponible';
 

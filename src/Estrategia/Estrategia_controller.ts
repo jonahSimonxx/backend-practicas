@@ -1,22 +1,27 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  HttpCode, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
   HttpStatus,
-  Query 
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { EstrategiaService } from './Estrategia_service';
 import { CreateEstrategiaDto } from './DTOS/CreateEstrategiaDto';
 import { UpdateEstrategiaDto } from './DTOS/UpdateEstrategiaDto';
 import { EstrategiaDto } from './DTOS/EstrategiaDto';
+import { JwtAuthGuard } from '../Auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../Auth/decorators/current-user.decorator';
 
 @ApiTags('estrategias')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('estrategias')
 export class EstrategiaController {
   constructor(private readonly estrategiaService: EstrategiaService) {}
@@ -26,7 +31,10 @@ export class EstrategiaController {
   @ApiResponse({ status: 201, description: 'Estrategia creada exitosamente', type: EstrategiaDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 409, description: 'ID ya existe' })
-  async create(@Body() createEstrategiaDto: CreateEstrategiaDto): Promise<EstrategiaDto> {
+  async create(
+    @Body() createEstrategiaDto: CreateEstrategiaDto,
+    @CurrentUser() _user: any,
+  ): Promise<EstrategiaDto> {
     return this.estrategiaService.create(createEstrategiaDto);
   }
 
@@ -39,9 +47,8 @@ export class EstrategiaController {
   async findAll(
     @Query('id') id?: string,
     @Query('estado') estado?: string,
-    @Query('resultado') resultado?: string
   ): Promise<EstrategiaDto[]> {
-    if (id){
+    if (id) {
       return this.estrategiaService.findById(id);
     }
     if (estado) {
@@ -50,23 +57,22 @@ export class EstrategiaController {
     return this.estrategiaService.findAll();
   }
 
-
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una estrategia por ID' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 200, description: 'Estrategia encontrada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async findOne(@Param('id') id: string): Promise<EstrategiaDto> { 
+  async findOne(@Param('id') id: string): Promise<EstrategiaDto> {
     return this.estrategiaService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar una estrategia' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 200, description: 'Estrategia actualizada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
   async update(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body() updateEstrategiaDto: UpdateEstrategiaDto,
   ): Promise<EstrategiaDto> {
     return this.estrategiaService.update(id, updateEstrategiaDto);
@@ -75,10 +81,10 @@ export class EstrategiaController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar una estrategia' })
-  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String }) 
+  @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 204, description: 'Estrategia eliminada' })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async remove(@Param('id') id: string): Promise<void> { 
+  async remove(@Param('id') id: string): Promise<void> {
     return this.estrategiaService.remove(id);
   }
 
@@ -113,6 +119,4 @@ export class EstrategiaController {
   }> {
     return this.estrategiaService.calcularViabilidadEstrategiaSencilla(id);
   }
-
-
 }

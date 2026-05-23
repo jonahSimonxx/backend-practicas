@@ -5,7 +5,9 @@ import { Demanda } from './ENTITY/Demanda.entity';
 import { CreateDemandaDto } from './DTOS/CreateDemandaDto';
 import { UpdateDemandaDto } from './DTOS/UpdateDemandaDto';
 import { DemandaDto } from './DTOS/DemandaDto';
-const PERIODOS_VALIDOS = ['diario', 'semanal', 'mensual']; // Ajusta estos valores según tus periodos reales
+import { PeriodoEnum } from '../common/enums/periodo.enum';
+
+const PERIODOS_VALIDOS = Object.values(PeriodoEnum);
 
 @Injectable()
 export class DemandaService {

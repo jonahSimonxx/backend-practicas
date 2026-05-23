@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Estrategia } from './ENTITY/Estrategia.entity';
@@ -109,9 +109,7 @@ export class EstrategiaService {
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
-    if (updateEstrategiaDto.id && updateEstrategiaDto.id !== id) {
-      throw new ConflictException('No se puede modificar el ID de una estrategia');
-    }
+    // El campo 'id' no puede venir en el body (excluido por OmitType en el DTO)
     Object.assign(estrategia, updateEstrategiaDto);
     const updatedEstrategia = await this.estrategiaRepository.save(estrategia);
     return this.mapToDto(updatedEstrategia);
@@ -231,11 +229,32 @@ export class EstrategiaService {
 
     await this.estrategiaRepository.update(id, { resultadoCalculo: resultadoGeneral });
 
+    // Calcular el presupuesto utilizado: suma de cantidadRequerida de todos los recursos
+    // a través de los productos de la estrategia (sumatoria del consumo de recursos).
+    // Si existe un registro previo en CALCULO_ESTRATEGIA, tomamos el presupuestoUtilizado más reciente;
+    // de lo contrario lo calculamos como la suma de la cantidadRequerida de cada recurso.
+    const ultimoCalculo = await this.calculoRepository.findOne({
+      where: { estrategiaId: id },
+      order: { fechaCalculo: 'DESC' },
+    });
+
+    const presupuestoUtilizado = ultimoCalculo
+      ? Number(ultimoCalculo.presupuestoUtilizado)
+      : resultadosProductos.reduce(
+          (totalEstrategia, producto) =>
+            totalEstrategia +
+            producto.recursos.reduce(
+              (totalProducto, recurso) => totalProducto + recurso.cantidadRequerida,
+              0,
+            ),
+          0,
+        );
+
     return {
       estrategiaId: estrategia.id,
       nombreEstrategia: estrategia.nombre,
       resultadoGeneral,
-      presupuestoUtilizado: 0, 
+      presupuestoUtilizado,
       fechaCalculo: new Date(),
       productos: resultadosProductos,
     };

@@ -11,10 +11,12 @@ import { InventarioModule } from './Inventario/Inventario.module';
 import { ProductoModule } from './Producto/Producto.module';
 import { RecursoModule } from './Recurso/Recurso.module';
 import { RelacionProductoRecursoModule } from './RelacionProductoRecurso/RelacionProductoRecurso.module';
+import { AuthModule } from './Auth/Auth.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    AuthModule,
     AlmacenModule,
     CalculoEstrategiaModule,
     DemandaModule,

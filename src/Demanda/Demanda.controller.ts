@@ -1,11 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { DemandaService } from './Demanda.service';
 import { CreateDemandaDto } from './DTOS/CreateDemandaDto';
 import { UpdateDemandaDto } from './DTOS/UpdateDemandaDto';
 import { DemandaDto } from './DTOS/DemandaDto';
+import { JwtAuthGuard } from '../Auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../Auth/decorators/current-user.decorator';
 
 @ApiTags('demandas')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('demandas')
 export class DemandaController {
   constructor(private readonly demandaService: DemandaService) {}
@@ -15,7 +19,10 @@ export class DemandaController {
   @ApiResponse({ status: 201, description: 'Demanda creada exitosamente', type: DemandaDto })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 409, description: 'ID ya existe' })
-  async create(@Body() createDemandaDto: CreateDemandaDto): Promise<DemandaDto> {
+  async create(
+    @Body() createDemandaDto: CreateDemandaDto,
+    @CurrentUser() _user: any,
+  ): Promise<DemandaDto> {
     return this.demandaService.create(createDemandaDto);
   }
 
@@ -30,7 +37,7 @@ export class DemandaController {
     @Query('estrategiaId') estrategiaId?: string,
     @Query('productoId') productoId?: string,
     @Query('tipoDemanda') tipoDemanda?: string,
-    @Query('periodo') periodo?: string
+    @Query('periodo') periodo?: string,
   ): Promise<DemandaDto[]> {
     if (estrategiaId) {
       return this.demandaService.findByEstrategia(estrategiaId);

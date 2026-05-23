@@ -1,33 +1,34 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, OmitType, ApiProperty } from '@nestjs/swagger';
 import { CreateEstrategiaDto } from './CreateEstrategiaDto';
 import { IsString, IsNumber, IsOptional, IsIn, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateEstrategiaDto extends PartialType(CreateEstrategiaDto) {
-  @ApiProperty({ 
-    description: 'Resultado del cálculo', 
+export class UpdateEstrategiaDto extends PartialType(
+  OmitType(CreateEstrategiaDto, ['id'] as const),
+) {
+  @ApiProperty({
+    description: 'Resultado del cálculo',
     enum: ['posible', 'imposible', 'sin calcular'],
-    required: false
+    required: false,
   })
   @IsString()
   @IsIn(['posible', 'imposible', 'sin calcular'])
   @IsOptional()
   resultadoCalculo?: string | null;
 
-  @ApiProperty({ 
-    description: 'Nuevo presupuesto máximo', 
+  @ApiProperty({
+    description: 'Nuevo presupuesto máximo',
     example: 60000,
-    required: false
+    required: false,
   })
   @IsNumber()
   @Min(0)
   @IsOptional()
   presupuestoMaximo?: number;
 
-  @ApiProperty({ 
-    description: 'Nuevo estado', 
+  @ApiProperty({
+    description: 'Nuevo estado',
     enum: ['activa', 'inactiva'],
-    required: false
+    required: false,
   })
   @IsString()
   @IsIn(['activa', 'inactiva'])
