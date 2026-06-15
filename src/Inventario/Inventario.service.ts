@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Inventario } from './ENTITY/Inventario.entity';
 import { CreateInventarioDto } from './DTOS/CreateInventarioDto';
 import { UpdateInventarioDto } from './DTOS/UpdateInventarioDto';
 import { InventarioDto } from './DTOS/InventarioDto';
+import {
+  INVENTARIO_REPOSITORY,
+  type IInventarioRepository,
+} from '../DataBase/INTERFACES/IInventarioRepository';
+import { AuditoriaPublisher } from '../Auditoria/Auditoria.publisher';
+import { AccionAuditoria, AuditoriaEvento } from '../Auditoria/EVENTS/auditoria.event';
 
 @Injectable()
 export class InventarioService {
   constructor(
-    @InjectRepository(Inventario)
-    private inventarioRepository: Repository<Inventario>,
+    @Inject(INVENTARIO_REPOSITORY)
+    private readonly inventarioRepository: IInventarioRepository,
+    private readonly auditoria: AuditoriaPublisher,
   ) {}
 
   // Crea un nuevo inventario
@@ -18,9 +23,7 @@ export class InventarioService {
     const { lote, recursoId, almacenId, unidadMedida, areaAlmacenamiento } = createInventarioDto;
 
     // Validar que no exista un lote igual para el mismo recurso y almacén
-    const existeLote = await this.inventarioRepository.findOne({
-      where: { lote, recursoId, almacenId }
-    });
+    const existeLote = await this.inventarioRepository.buscarUno({ lote, recursoId, almacenId });
 
     if (existeLote) {
       throw new ConflictException(`Ya existe un lote ${lote} para este recurso y almacén`);
@@ -31,24 +34,30 @@ export class InventarioService {
       throw new BadRequestException('La unidad de medida y el área de almacenamiento son obligatorios');
     }
 
-    const inventario = this.inventarioRepository.create(createInventarioDto);
-    const savedInventario = await this.inventarioRepository.save(inventario);
+    const inventario = this.inventarioRepository.crear(createInventarioDto);
+    const savedInventario = await this.inventarioRepository.guardar(inventario);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.CREAR_INVENTARIO,
+        entidad: 'Inventario',
+        entidadId: savedInventario.id,
+        detalles: { recursoId, almacenId, lote },
+      }),
+    );
+
     return this.mapToDto(savedInventario);
   }
 
   // Lista todos los inventarios
   async findAll(): Promise<InventarioDto[]> {
-    const inventarios = await this.inventarioRepository.find({
-      order: { fechaFabricacion: 'DESC' }
-    });
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarTodos();
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca un inventario por ID
   async findOne(id: string): Promise<InventarioDto> {
-    const inventario = await this.inventarioRepository.findOne({
-      where: { id }
-    });
+    const inventario = await this.inventarioRepository.buscarPorId(id);
 
     if (!inventario) {
       throw new NotFoundException(`Inventario con ID ${id} no encontrado`);
@@ -59,50 +68,32 @@ export class InventarioService {
 
   // Busca inventarios por recurso
   async findByRecurso(recursoId: string): Promise<InventarioDto[]> {
-    const inventarios = await this.inventarioRepository.find({
-      where: { recursoId },
-      order: { fechaFabricacion: 'DESC' }
-    });
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarPorRecurso(recursoId);
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca inventarios por almacén
   async findByAlmacen(almacenId: string): Promise<InventarioDto[]> {
-    const inventarios = await this.inventarioRepository.find({
-      where: { almacenId },
-      order: { fechaFabricacion: 'DESC' }
-    });
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarPorAlmacen(almacenId);
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca inventarios por estado
   async findByEstado(estado: string): Promise<InventarioDto[]> {
-    const inventarios = await this.inventarioRepository.find({
-      where: { estado },
-      order: { fechaFabricacion: 'DESC' }
-    });
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarPorEstado(estado);
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca inventarios por fabricante
   async findByFabricante(fabricante: string): Promise<InventarioDto[]> {
-    const inventarios = await this.inventarioRepository
-      .createQueryBuilder('inventario')
-      .where('LOWER(inventario.fabricante) LIKE LOWER(:fabricante)', {
-        fabricante: `%${fabricante}%`
-      })
-      .getMany();
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarPorFabricante(fabricante);
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca inventarios caducados
   async findCaducados(): Promise<InventarioDto[]> {
-    const hoy = new Date();
-    const inventarios = await this.inventarioRepository
-      .createQueryBuilder('inventario')
-      .where('inventario.fechaCaducidad < :hoy', { hoy })
-      .getMany();
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarCaducados(new Date());
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Busca inventarios por caducar en X días
@@ -110,30 +101,22 @@ export class InventarioService {
     const fechaLimite = new Date();
     fechaLimite.setDate(fechaLimite.getDate() + dias);
 
-    const inventarios = await this.inventarioRepository
-      .createQueryBuilder('inventario')
-      .where('inventario.fechaCaducidad BETWEEN :hoy AND :fechaLimite', {
-        hoy: new Date(),
-        fechaLimite
-      })
-      .getMany();
-    return inventarios.map(inventario => this.mapToDto(inventario));
+    const inventarios = await this.inventarioRepository.buscarPorCaducar(new Date(), fechaLimite);
+    return inventarios.map((inventario) => this.mapToDto(inventario));
   }
 
   // Obtiene la disponibilidad total de un recurso
   async getTotalDisponiblePorRecurso(recursoId: string): Promise<number> {
-    const inventarios = await this.inventarioRepository.find({
-      where: { recursoId, estado: 'disponible' }
-    });
+    const inventarios = await this.inventarioRepository.buscarDisponiblesPorRecurso(recursoId);
     return inventarios.reduce(
       (total, inventario) => total + (Number(inventario.cantidadDisponible) || 0),
-      0
+      0,
     );
   }
 
   // Actualiza un inventario
   async update(id: string, updateInventarioDto: UpdateInventarioDto): Promise<InventarioDto> {
-    const inventario = await this.inventarioRepository.findOne({ where: { id } });
+    const inventario = await this.inventarioRepository.buscarPorId(id);
 
     if (!inventario) {
       throw new NotFoundException(`Inventario con ID ${id} no encontrado`);
@@ -163,13 +146,23 @@ export class InventarioService {
     }
 
     Object.assign(inventario, updateInventarioDto);
-    const updatedInventario = await this.inventarioRepository.save(inventario);
+    const updatedInventario = await this.inventarioRepository.guardar(inventario);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ACTUALIZAR_INVENTARIO,
+        entidad: 'Inventario',
+        entidadId: id,
+        detalles: { cambios: { ...updateInventarioDto } },
+      }),
+    );
+
     return this.mapToDto(updatedInventario);
   }
 
   // Elimina un inventario
   async remove(id: string): Promise<void> {
-    const inventario = await this.inventarioRepository.findOne({ where: { id } });
+    const inventario = await this.inventarioRepository.buscarPorId(id);
 
     if (!inventario) {
       throw new NotFoundException(`Inventario con ID ${id} no encontrado`);
@@ -180,11 +173,19 @@ export class InventarioService {
       throw new ConflictException(`No se puede eliminar el inventario ${id} porque tiene cantidad disponible`);
     }
 
-    const result = await this.inventarioRepository.delete(id);
+    const filasAfectadas = await this.inventarioRepository.eliminar(id);
 
-    if (result.affected === 0) {
+    if (filasAfectadas === 0) {
       throw new NotFoundException(`Inventario con ID ${id} no encontrado`);
     }
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ELIMINAR_INVENTARIO,
+        entidad: 'Inventario',
+        entidadId: id,
+      }),
+    );
   }
 
   // Mapea entidad a DTO

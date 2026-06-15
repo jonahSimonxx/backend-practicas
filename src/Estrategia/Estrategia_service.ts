@@ -1,59 +1,53 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Estrategia } from './ENTITY/Estrategia.entity';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEstrategiaDto } from './DTOS/CreateEstrategiaDto';
 import { UpdateEstrategiaDto } from './DTOS/UpdateEstrategiaDto';
 import { EstrategiaDto } from './DTOS/EstrategiaDto';
-import { RelacionProductoRecurso } from '../RelacionProductoRecurso/ENTITY/RelacionProductoRecurso.entity';
-import { Inventario } from '../Inventario/ENTITY/Inventario.entity';
-import { CalculoEstrategia } from '../CalculoEstrategia/ENTITY/CalculoEstrategia.entity';
-import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
-import { ResultadoCalculoDto, ResultadoProductoDto, ResultadoRecursoDto } from '../CalculoEstrategia/DTOS/resultado-calculo.dto';
+import { Estrategia } from './ENTITY/Estrategia.entity';
+import {
+  ESTRATEGIA_REPOSITORY,
+  type IEstrategiaRepository,
+} from '../DataBase/INTERFACES/IEstrategiaRepository';
+import {
+  INVENTARIO_REPOSITORY,
+  type IInventarioRepository,
+} from '../DataBase/INTERFACES/IInventarioRepository';
+import {
+  RELACION_PRODUCTO_RECURSO_REPOSITORY,
+  type IRelacionProductoRecursoRepository,
+} from '../DataBase/INTERFACES/IRelacionProductoRecursoRepository';
+import {
+  CALCULO_ESTRATEGIA_REPOSITORY,
+  type ICalculoEstrategiaRepository,
+} from '../DataBase/INTERFACES/ICalculoEstrategiaRepository';
+import { ResultadoCalculoDto } from '../CalculoEstrategia/DTOS/resultado-calculo.dto';
 import { CalculoRequestDto } from '../CalculoEstrategia/DTOS/calculo-request.dto';
-
-interface InventarioDetalle {
-  almacen: string;
-  lote: string;
-  fabricante: string;
-  fechaFabricacion: Date;
-  fechaCaducidad: Date;
-  cantidad: number;
-  unidadMedida: string;
-}
-// interfaz segunda funcion
-interface ExistenciaDetalle {
-  almacen: string;
-  bdInventario: string;      
-  area: string;              
-  numeroMuestreo: string;   
-  fabricante: string;
-  fechaFabricacion: Date;
-  fechaCaducidad: Date;
-  fechaVigencia: Date;
-  lote: string;
-  cantidad: number;
-  unidadMedida: string;
-}
+import { EstrategiaCalculoFactory } from '../CalculoEstrategia/STRATEGIES/EstrategiaCalculoFactory';
+import {
+  ContextoCalculoViabilidad,
+  ProductoContexto,
+  RecursoContexto,
+} from '../CalculoEstrategia/STRATEGIES/IEstrategiaCalculo';
+import { AuditoriaPublisher } from '../Auditoria/Auditoria.publisher';
+import { AccionAuditoria, AuditoriaEvento } from '../Auditoria/EVENTS/auditoria.event';
 
 @Injectable()
 export class EstrategiaService {
   constructor(
-    @InjectRepository(Estrategia)
-    private estrategiaRepository: Repository<Estrategia>,
-    @InjectRepository(RelacionProductoRecurso)
-    private relacionRepository: Repository<RelacionProductoRecurso>,
-    @InjectRepository(Inventario)
-    private inventarioRepository: Repository<Inventario>,
-    @InjectRepository(CalculoEstrategia)
-    private calculoRepository: Repository<CalculoEstrategia>,
-    @InjectRepository(DetalleCalculoRecurso)
-    private detalleCalculoRepository: Repository<DetalleCalculoRecurso>,
+    @Inject(ESTRATEGIA_REPOSITORY)
+    private readonly estrategiaRepository: IEstrategiaRepository,
+    @Inject(RELACION_PRODUCTO_RECURSO_REPOSITORY)
+    private readonly relacionRepository: IRelacionProductoRecursoRepository,
+    @Inject(INVENTARIO_REPOSITORY)
+    private readonly inventarioRepository: IInventarioRepository,
+    @Inject(CALCULO_ESTRATEGIA_REPOSITORY)
+    private readonly calculoRepository: ICalculoEstrategiaRepository,
+    private readonly calculoFactory: EstrategiaCalculoFactory,
+    private readonly auditoria: AuditoriaPublisher,
   ) {}
 
   // Crea una nueva estrategia
-  async create(createEstrategiaDto: CreateEstrategiaDto): Promise<EstrategiaDto> {
-    const estrategia = this.estrategiaRepository.create({
+  async create(createEstrategiaDto: CreateEstrategiaDto, usuarioId?: string): Promise<EstrategiaDto> {
+    const estrategia = this.estrategiaRepository.crear({
       id: createEstrategiaDto.id,
       nombre: createEstrategiaDto.nombre,
       descripcion: createEstrategiaDto.descripcion,
@@ -62,23 +56,30 @@ export class EstrategiaService {
       resultadoCalculo: 'sin calcular',
       fechaCreacion: new Date(),
     });
-    const savedEstrategia = await this.estrategiaRepository.save(estrategia);
+    const savedEstrategia = await this.estrategiaRepository.guardar(estrategia);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.CREAR_ESTRATEGIA,
+        entidad: 'Estrategia',
+        entidadId: savedEstrategia.id,
+        usuarioId,
+        detalles: { nombre: savedEstrategia.nombre, estado: savedEstrategia.estado },
+      }),
+    );
+
     return this.mapToDto(savedEstrategia);
   }
 
   // Lista todas las estrategias
   async findAll(): Promise<EstrategiaDto[]> {
-    const estrategias = await this.estrategiaRepository.find({
-      order: { fechaCreacion: 'DESC' }
-    });
-    return estrategias.map(estrategia => this.mapToDto(estrategia));
+    const estrategias = await this.estrategiaRepository.buscarTodos();
+    return estrategias.map((estrategia) => this.mapToDto(estrategia));
   }
 
   // Busca una estrategia por ID
   async findOne(id: string): Promise<EstrategiaDto> {
-    const estrategia = await this.estrategiaRepository.findOne({
-      where: { id }
-    });
+    const estrategia = await this.estrategiaRepository.buscarPorId(id);
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
@@ -87,122 +88,182 @@ export class EstrategiaService {
 
   // Busca estrategias por ID (para filtrado)
   async findById(id: string): Promise<EstrategiaDto[]> {
-    const estrategias = await this.estrategiaRepository.find({
-      where: { id },
-      order: { nombre: 'ASC' }
-    });
-    return estrategias.map(estrategia => this.mapToDto(estrategia));
+    const estrategia = await this.estrategiaRepository.buscarPorId(id);
+    return estrategia ? [this.mapToDto(estrategia)] : [];
   }
 
   // Busca estrategias por estado
   async findByEstado(estado: string): Promise<EstrategiaDto[]> {
-    const estrategias = await this.estrategiaRepository.find({
-      where: { estado },
-      order: { nombre: 'ASC' }
-    });
-    return estrategias.map(estrategia => this.mapToDto(estrategia));
+    const estrategias = await this.estrategiaRepository.buscarPorEstado(estado);
+    return estrategias.map((estrategia) => this.mapToDto(estrategia));
   }
 
   // Actualiza una estrategia
-  async update(id: string, updateEstrategiaDto: UpdateEstrategiaDto): Promise<EstrategiaDto> {
-    const estrategia = await this.estrategiaRepository.findOne({ where: { id } });
+  async update(
+    id: string,
+    updateEstrategiaDto: UpdateEstrategiaDto,
+    usuarioId?: string,
+  ): Promise<EstrategiaDto> {
+    const estrategia = await this.estrategiaRepository.buscarPorId(id);
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
     // El campo 'id' no puede venir en el body (excluido por OmitType en el DTO)
     Object.assign(estrategia, updateEstrategiaDto);
-    const updatedEstrategia = await this.estrategiaRepository.save(estrategia);
+    const updatedEstrategia = await this.estrategiaRepository.guardar(estrategia);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ACTUALIZAR_ESTRATEGIA,
+        entidad: 'Estrategia',
+        entidadId: id,
+        usuarioId,
+        detalles: { cambios: { ...updateEstrategiaDto } },
+      }),
+    );
+
     return this.mapToDto(updatedEstrategia);
   }
 
   // Elimina una estrategia
-  async remove(id: string): Promise<void> {
-    const estrategia = await this.estrategiaRepository.findOne({ where: { id } });
+  async remove(id: string, usuarioId?: string): Promise<void> {
+    const estrategia = await this.estrategiaRepository.buscarPorId(id);
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
-    const result = await this.estrategiaRepository.delete(id);
-    if (result.affected === 0) {
+    const filasAfectadas = await this.estrategiaRepository.eliminar(id);
+    if (filasAfectadas === 0) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ELIMINAR_ESTRATEGIA,
+        entidad: 'Estrategia',
+        entidadId: id,
+        usuarioId,
+      }),
+    );
   }
 
   // Activa una estrategia
-  async activarEstrategia(id: string): Promise<EstrategiaDto> {
-    return this.cambiarEstado(id, 'activa');
+  async activarEstrategia(id: string, usuarioId?: string): Promise<EstrategiaDto> {
+    return this.cambiarEstado(id, 'activa', AccionAuditoria.ACTIVAR_ESTRATEGIA, usuarioId);
   }
 
   // Desactiva una estrategia
-  async desactivarEstrategia(id: string): Promise<EstrategiaDto> {
-    return this.cambiarEstado(id, 'inactiva');
+  async desactivarEstrategia(id: string, usuarioId?: string): Promise<EstrategiaDto> {
+    return this.cambiarEstado(id, 'inactiva', AccionAuditoria.DESACTIVAR_ESTRATEGIA, usuarioId);
   }
 
   // Cambia el estado de una estrategia
-  private async cambiarEstado(id: string, nuevoEstado: string): Promise<EstrategiaDto> {
-    const estrategia = await this.estrategiaRepository.findOne({ where: { id } });
+  private async cambiarEstado(
+    id: string,
+    nuevoEstado: string,
+    accion: AccionAuditoria,
+    usuarioId?: string,
+  ): Promise<EstrategiaDto> {
+    const estrategia = await this.estrategiaRepository.buscarPorId(id);
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
     estrategia.estado = nuevoEstado;
-    const updatedEstrategia = await this.estrategiaRepository.save(estrategia);
+    const updatedEstrategia = await this.estrategiaRepository.guardar(estrategia);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion,
+        entidad: 'Estrategia',
+        entidadId: id,
+        usuarioId,
+        detalles: { estado: nuevoEstado },
+      }),
+    );
+
     return this.mapToDto(updatedEstrategia);
   }
 
   // Obtiene la existencia total de un recurso
   async obtenerExistenciaTotalRecurso(recursoId: string): Promise<number> {
-    const inventarios = await this.inventarioRepository.find({
-      where: { recursoId, estado: 'disponible' },
-    });
-    return inventarios.reduce((total, inventario) => total + inventario.cantidadDisponible, 0);
+    const inventarios = await this.inventarioRepository.buscarDisponiblesPorRecurso(recursoId);
+    return inventarios.reduce(
+      (total, inventario) => total + Number(inventario.cantidadDisponible),
+      0,
+    );
   }
 
-  // Calcula la viabilidad detallada de una estrategia
+  // Calcula la viabilidad detallada de una estrategia (patrón Strategy)
   async calcularEstrategiaDetallada(
     id: string,
-    options?: CalculoRequestDto
+    options?: CalculoRequestDto,
+    usuarioId?: string,
   ): Promise<ResultadoCalculoDto> {
-    const estrategia = await this.estrategiaRepository.findOne({
-      where: { id },
-      relations: ['demandas', 'demandas.producto'],
+    const contexto = await this.construirContextoCalculo(id);
+
+    // Selección del algoritmo de cálculo (patrón Strategy)
+    const algoritmo = this.calculoFactory.obtener(options?.algoritmo);
+    const resultado = algoritmo.calcular(contexto);
+
+    await this.estrategiaRepository.actualizar(id, {
+      resultadoCalculo: resultado.resultadoGeneral,
     });
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.CALCULAR_VIABILIDAD,
+        entidad: 'Estrategia',
+        entidadId: id,
+        usuarioId,
+        detalles: {
+          algoritmo: algoritmo.nombre,
+          resultadoGeneral: resultado.resultadoGeneral,
+          presupuestoUtilizado: resultado.presupuestoUtilizado,
+        },
+      }),
+    );
+
+    return resultado;
+  }
+
+  /**
+   * Reúne, desde los repositorios, todos los datos que el algoritmo de cálculo
+   * necesita. El acceso a datos vive aquí; la decisión de viabilidad vive en la
+   * estrategia (patrón Strategy).
+   */
+  private async construirContextoCalculo(id: string): Promise<ContextoCalculoViabilidad> {
+    const estrategia = await this.estrategiaRepository.buscarPorIdConRelaciones(id, [
+      'demandas',
+      'demandas.producto',
+    ]);
 
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${id} no encontrada`);
     }
 
-    const resultadosProductos: ResultadoProductoDto[] = [];
+    const productos: ProductoContexto[] = [];
 
     for (const demanda of estrategia.demandas || []) {
       const producto = demanda.producto;
-      const relaciones = await this.relacionRepository.find({
-        where: { productoId: producto.id },
-        relations: ['recurso'],
-      });
+      const relaciones = await this.relacionRepository.buscarPorProductoConRecurso(producto.id);
 
-      const recursosResultados: ResultadoRecursoDto[] = [];
+      const recursos: RecursoContexto[] = [];
 
       for (const relacion of relaciones) {
         const recurso = relacion.recurso;
         const cantidadRequeridaTotal = relacion.cantidadRequerida * demanda.cantidadRequerida;
         const existenciaTotal = await this.obtenerExistenciaTotalRecurso(recurso.id);
-        const esSatisfacible = existenciaTotal >= cantidadRequeridaTotal;
-        const deficit = esSatisfacible ? 0 : cantidadRequeridaTotal - existenciaTotal;
+        const inventariosDetalle =
+          await this.inventarioRepository.buscarDisponiblesPorRecurso(recurso.id);
 
-        const inventariosDetalle = await this.inventarioRepository.find({
-          where: { recursoId: recurso.id, estado: 'disponible' },
-        });
-
-        recursosResultados.push({
+        recursos.push({
           recursoId: recurso.id,
           nombre: recurso.nombre,
           tipoRecurso: recurso.tipoRecurso,
           unidadMedida: recurso.unidadMedida,
-          tipoRelacion: relacion.tipoRelacion, 
+          tipoRelacion: relacion.tipoRelacion,
           cantidadRequerida: cantidadRequeridaTotal,
           existenciaInventario: existenciaTotal,
-          esSatisfacible,
-          deficit,
-          inventarios: inventariosDetalle.map(i => ({
+          inventarios: inventariosDetalle.map((i) => ({
             almacen: i.almacenId.toString(),
             lote: i.lote.toString(),
             fabricante: i.fabricante,
@@ -214,49 +275,24 @@ export class EstrategiaService {
         });
       }
 
-      const productoEsSatisfacible = recursosResultados.every(r => r.esSatisfacible);
-      resultadosProductos.push({
+      productos.push({
         productoId: producto.id,
         nombreProducto: producto.nombre,
         demanda: demanda.cantidadRequerida,
-        recursos: recursosResultados,
-        esSatisfacible: productoEsSatisfacible,
+        recursos,
       });
     }
 
-    const estrategiaEsViable = resultadosProductos.every(p => p.esSatisfacible);
-    const resultadoGeneral = estrategiaEsViable ? 'posible' : 'imposible';
-
-    await this.estrategiaRepository.update(id, { resultadoCalculo: resultadoGeneral });
-
-    // Calcular el presupuesto utilizado: suma de cantidadRequerida de todos los recursos
-    // a través de los productos de la estrategia (sumatoria del consumo de recursos).
-    // Si existe un registro previo en CALCULO_ESTRATEGIA, tomamos el presupuestoUtilizado más reciente;
-    // de lo contrario lo calculamos como la suma de la cantidadRequerida de cada recurso.
-    const ultimoCalculo = await this.calculoRepository.findOne({
-      where: { estrategiaId: id },
-      order: { fechaCalculo: 'DESC' },
-    });
-
-    const presupuestoUtilizado = ultimoCalculo
-      ? Number(ultimoCalculo.presupuestoUtilizado)
-      : resultadosProductos.reduce(
-          (totalEstrategia, producto) =>
-            totalEstrategia +
-            producto.recursos.reduce(
-              (totalProducto, recurso) => totalProducto + recurso.cantidadRequerida,
-              0,
-            ),
-          0,
-        );
+    const ultimoCalculo = await this.calculoRepository.buscarUltimoPorEstrategia(id);
 
     return {
       estrategiaId: estrategia.id,
       nombreEstrategia: estrategia.nombre,
-      resultadoGeneral,
-      presupuestoUtilizado,
-      fechaCalculo: new Date(),
-      productos: resultadosProductos,
+      presupuestoMaximo: Number(estrategia.presupuestoMaximo),
+      presupuestoUtilizadoPrevio: ultimoCalculo
+        ? Number(ultimoCalculo.presupuestoUtilizado)
+        : null,
+      productos,
     };
   }
 
@@ -268,10 +304,10 @@ export class EstrategiaService {
     productosSatisfacibles: string[];
     productosNoSatisfacibles: string[];
   }> {
-    const estrategia = await this.estrategiaRepository.findOne({
-      where: { id: estrategiaId },
-      relations: ['demandas', 'demandas.producto'],
-    });
+    const estrategia = await this.estrategiaRepository.buscarPorIdConRelaciones(estrategiaId, [
+      'demandas',
+      'demandas.producto',
+    ]);
 
     if (!estrategia) {
       throw new NotFoundException(`Estrategia con ID ${estrategiaId} no encontrada`);
@@ -281,10 +317,7 @@ export class EstrategiaService {
 
     for (const demanda of estrategia.demandas) {
       const producto = demanda.producto;
-      const relaciones = await this.relacionRepository.find({
-        where: { productoId: producto.id },
-        relations: ['recurso'],
-      });
+      const relaciones = await this.relacionRepository.buscarPorProductoConRecurso(producto.id);
 
       let productoEsSatisfacible = true;
 
@@ -305,13 +338,13 @@ export class EstrategiaService {
       });
     }
 
-    const estrategiaEsViable = resultadosProductos.every(p => p.esSatisfacible);
+    const estrategiaEsViable = resultadosProductos.every((p) => p.esSatisfacible);
     const productosSatisfacibles = resultadosProductos
-      .filter(p => p.esSatisfacible)
-      .map(p => p.productoId);
+      .filter((p) => p.esSatisfacible)
+      .map((p) => p.productoId);
     const productosNoSatisfacibles = resultadosProductos
-      .filter(p => !p.esSatisfacible)
-      .map(p => p.productoId);
+      .filter((p) => !p.esSatisfacible)
+      .map((p) => p.productoId);
 
     return {
       estrategiaId: estrategia.id,

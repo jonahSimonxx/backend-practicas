@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './DataBase/basedato';
+import { AuditoriaModule } from './Auditoria/Auditoria.module';
 import { AlmacenModule } from './Almacen/Almacen_module';
 import { CalculoEstrategiaModule } from './CalculoEstrategia/CalculoEstrategia.module';
 import { DemandaModule } from './Demanda/Demanda.module';
@@ -15,7 +17,9 @@ import { AuthModule } from './Auth/Auth.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     DatabaseModule,
+    AuditoriaModule,
     AuthModule,
     AlmacenModule,
     CalculoEstrategiaModule,
