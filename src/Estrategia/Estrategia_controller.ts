@@ -33,9 +33,9 @@ export class EstrategiaController {
   @ApiResponse({ status: 409, description: 'ID ya existe' })
   async create(
     @Body() createEstrategiaDto: CreateEstrategiaDto,
-    @CurrentUser() _user: any,
+    @CurrentUser() user: any,
   ): Promise<EstrategiaDto> {
-    return this.estrategiaService.create(createEstrategiaDto);
+    return this.estrategiaService.create(createEstrategiaDto, user?.id);
   }
 
   @Get()
@@ -74,8 +74,9 @@ export class EstrategiaController {
   async update(
     @Param('id') id: string,
     @Body() updateEstrategiaDto: UpdateEstrategiaDto,
+    @CurrentUser() user: any,
   ): Promise<EstrategiaDto> {
-    return this.estrategiaService.update(id, updateEstrategiaDto);
+    return this.estrategiaService.update(id, updateEstrategiaDto, user?.id);
   }
 
   @Delete(':id')
@@ -84,8 +85,8 @@ export class EstrategiaController {
   @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 204, description: 'Estrategia eliminada' })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.estrategiaService.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: any): Promise<void> {
+    return this.estrategiaService.remove(id, user?.id);
   }
 
   @Post(':id/activar')
@@ -93,8 +94,8 @@ export class EstrategiaController {
   @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 200, description: 'Estrategia activada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async activar(@Param('id') id: string): Promise<EstrategiaDto> {
-    return this.estrategiaService.activarEstrategia(id);
+  async activar(@Param('id') id: string, @CurrentUser() user: any): Promise<EstrategiaDto> {
+    return this.estrategiaService.activarEstrategia(id, user?.id);
   }
 
   @Post(':id/desactivar')
@@ -102,8 +103,8 @@ export class EstrategiaController {
   @ApiParam({ name: 'id', description: 'ID de la estrategia', type: String })
   @ApiResponse({ status: 200, description: 'Estrategia desactivada', type: EstrategiaDto })
   @ApiResponse({ status: 404, description: 'Estrategia no encontrada' })
-  async desactivar(@Param('id') id: string): Promise<EstrategiaDto> {
-    return this.estrategiaService.desactivarEstrategia(id);
+  async desactivar(@Param('id') id: string, @CurrentUser() user: any): Promise<EstrategiaDto> {
+    return this.estrategiaService.desactivarEstrategia(id, user?.id);
   }
 
   @Get(':id/viabilidad-sencilla')

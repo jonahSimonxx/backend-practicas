@@ -1,6 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { CalculoEstrategia } from './ENTITY/CalculoEstrategia.entity';
 import { ResultadoCalculoDto } from './DTOS/resultado-calculo.dto';
 import { CalculoRequestDto } from './DTOS/calculo-request.dto';
@@ -8,20 +6,27 @@ import { EstrategiaService } from '../Estrategia/Estrategia_service';
 import { CreateCalculoEstrategiaDto } from './DTOS/CreateCalculoEstrategiaDto';
 import { UpdateCalculoEstrategiaDto } from './DTOS/UpdateCalculoEstrategiaDto';
 import { CalculoEstrategiaDto } from './DTOS/CalculoEstrategiaDto';
+import {
+  CALCULO_ESTRATEGIA_REPOSITORY,
+  type ICalculoEstrategiaRepository,
+} from '../DataBase/INTERFACES/ICalculoEstrategiaRepository';
+import { AuditoriaPublisher } from '../Auditoria/Auditoria.publisher';
+import { AccionAuditoria, AuditoriaEvento } from '../Auditoria/EVENTS/auditoria.event';
 
 @Injectable()
 export class CalculoEstrategiaService {
   constructor(
-    @InjectRepository(CalculoEstrategia)
-    private calculoEstrategiaRepository: Repository<CalculoEstrategia>,
-    private estrategiaService: EstrategiaService,
+    @Inject(CALCULO_ESTRATEGIA_REPOSITORY)
+    private readonly calculoEstrategiaRepository: ICalculoEstrategiaRepository,
+    private readonly estrategiaService: EstrategiaService,
+    private readonly auditoria: AuditoriaPublisher,
   ) {}
 
   async create(createCalculoEstrategiaDto: CreateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
     // Verificar si ya existe un cálculo con ese ID
-    const existente = await this.calculoEstrategiaRepository.findOne({
-      where: { id: createCalculoEstrategiaDto.id }
-    });
+    const existente = await this.calculoEstrategiaRepository.buscarPorId(
+      createCalculoEstrategiaDto.id,
+    );
 
     if (existente) {
       throw new ConflictException(`Ya existe un cálculo con ID ${createCalculoEstrategiaDto.id}`);
@@ -30,25 +35,34 @@ export class CalculoEstrategiaService {
     // Validar que la suma no exceda límites razonables
     this.validarPresupuesto(
       createCalculoEstrategiaDto.presupuestoUtilizado,
-      createCalculoEstrategiaDto.presupuestoDisponible
+      createCalculoEstrategiaDto.presupuestoDisponible,
     );
 
-    const calculo = this.calculoEstrategiaRepository.create(createCalculoEstrategiaDto);
-    const savedCalculo = await this.calculoEstrategiaRepository.save(calculo);
+    const calculo = this.calculoEstrategiaRepository.crear(createCalculoEstrategiaDto);
+    const savedCalculo = await this.calculoEstrategiaRepository.guardar(calculo);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.CREAR_CALCULO,
+        entidad: 'CalculoEstrategia',
+        entidadId: savedCalculo.id,
+        detalles: {
+          estrategiaId: savedCalculo.estrategiaId,
+          resultadoGeneral: savedCalculo.resultadoGeneral,
+        },
+      }),
+    );
+
     return this.mapToDto(savedCalculo);
   }
 
   async findAll(): Promise<CalculoEstrategiaDto[]> {
-    const calculos = await this.calculoEstrategiaRepository.find({
-      order: { fechaCalculo: 'DESC' }
-    });
-    return calculos.map(calculo => this.mapToDto(calculo));
+    const calculos = await this.calculoEstrategiaRepository.buscarTodos();
+    return calculos.map((calculo) => this.mapToDto(calculo));
   }
 
   async findOne(id: string): Promise<CalculoEstrategiaDto> {
-    const calculo = await this.calculoEstrategiaRepository.findOne({
-      where: { id }
-    });
+    const calculo = await this.calculoEstrategiaRepository.buscarPorId(id);
 
     if (!calculo) {
       throw new NotFoundException(`Cálculo con ID ${id} no encontrado`);
@@ -58,26 +72,17 @@ export class CalculoEstrategiaService {
   }
 
   async findByEstrategia(estrategiaId: string): Promise<CalculoEstrategiaDto[]> {
-    const calculos = await this.calculoEstrategiaRepository.find({
-      where: { estrategiaId },
-      order: { fechaCalculo: 'DESC' }
-    });
-    return calculos.map(calculo => this.mapToDto(calculo));
+    const calculos = await this.calculoEstrategiaRepository.buscarPorEstrategia(estrategiaId);
+    return calculos.map((calculo) => this.mapToDto(calculo));
   }
 
   async findByResultado(resultadoGeneral: string): Promise<CalculoEstrategiaDto[]> {
-    const calculos = await this.calculoEstrategiaRepository.find({
-      where: { resultadoGeneral },
-      order: { fechaCalculo: 'DESC' }
-    });
-    return calculos.map(calculo => this.mapToDto(calculo));
+    const calculos = await this.calculoEstrategiaRepository.buscarPorResultado(resultadoGeneral);
+    return calculos.map((calculo) => this.mapToDto(calculo));
   }
 
   async findLatestByEstrategia(estrategiaId: string): Promise<CalculoEstrategiaDto> {
-    const calculo = await this.calculoEstrategiaRepository.findOne({
-      where: { estrategiaId },
-      order: { fechaCalculo: 'DESC' }
-    });
+    const calculo = await this.calculoEstrategiaRepository.buscarUltimoPorEstrategia(estrategiaId);
 
     if (!calculo) {
       throw new NotFoundException(`No se encontraron cálculos para la estrategia ${estrategiaId}`);
@@ -87,8 +92,8 @@ export class CalculoEstrategiaService {
   }
 
   async update(id: string, updateCalculoEstrategiaDto: UpdateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
-    const calculo = await this.calculoEstrategiaRepository.findOne({ where: { id } });
-    
+    const calculo = await this.calculoEstrategiaRepository.buscarPorId(id);
+
     if (!calculo) {
       throw new NotFoundException(`Cálculo con ID ${id} no encontrado`);
     }
@@ -99,37 +104,55 @@ export class CalculoEstrategiaService {
     }
 
     // Validar presupuesto si se actualiza
-    if (updateCalculoEstrategiaDto.presupuestoUtilizado !== undefined || 
+    if (updateCalculoEstrategiaDto.presupuestoUtilizado !== undefined ||
         updateCalculoEstrategiaDto.presupuestoDisponible !== undefined) {
-      
+
       const nuevoUtilizado = updateCalculoEstrategiaDto.presupuestoUtilizado ?? calculo.presupuestoUtilizado;
       const nuevoDisponible = updateCalculoEstrategiaDto.presupuestoDisponible ?? calculo.presupuestoDisponible;
-      
+
       this.validarPresupuesto(nuevoUtilizado, nuevoDisponible);
     }
 
     Object.assign(calculo, updateCalculoEstrategiaDto);
-    const updatedCalculo = await this.calculoEstrategiaRepository.save(calculo);
+    const updatedCalculo = await this.calculoEstrategiaRepository.guardar(calculo);
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ACTUALIZAR_CALCULO,
+        entidad: 'CalculoEstrategia',
+        entidadId: id,
+        detalles: { cambios: { ...updateCalculoEstrategiaDto } },
+      }),
+    );
+
     return this.mapToDto(updatedCalculo);
   }
 
   async remove(id: string): Promise<void> {
-    const calculo = await this.calculoEstrategiaRepository.findOne({ where: { id } });
+    const calculo = await this.calculoEstrategiaRepository.buscarPorId(id);
 
     if (!calculo) {
       throw new NotFoundException(`Cálculo con ID ${id} no encontrado`);
     }
 
-    const result = await this.calculoEstrategiaRepository.delete(id);
-    
-    if (result.affected === 0) {
+    const filasAfectadas = await this.calculoEstrategiaRepository.eliminar(id);
+
+    if (filasAfectadas === 0) {
       throw new NotFoundException(`Cálculo con ID ${id} no encontrado`);
     }
+
+    this.auditoria.emitir(
+      new AuditoriaEvento({
+        accion: AccionAuditoria.ELIMINAR_CALCULO,
+        entidad: 'CalculoEstrategia',
+        entidadId: id,
+      }),
+    );
   }
 
   async getEstadisticasPorEstrategia(estrategiaId: string): Promise<any> {
     const calculos = await this.findByEstrategia(estrategiaId);
-    
+
     if (calculos.length === 0) {
       return {
         estrategiaId,
@@ -152,7 +175,7 @@ export class CalculoEstrategiaService {
     }
 
     const total = presupuestoUtilizado + presupuestoDisponible;
-    if (total > 100000000) { 
+    if (total > 100000000) {
       throw new BadRequestException('El presupuesto total excede el límite permitido');
     }
   }

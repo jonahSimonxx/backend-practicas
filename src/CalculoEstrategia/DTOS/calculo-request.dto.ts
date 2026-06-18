@@ -5,5 +5,12 @@ export class CalculoRequestDto {
   usarAlmacenesNoTocar?: boolean;
   
   @ApiProperty({ required: false })
-  priorizarAlmacenes?: string[]; 
+  priorizarAlmacenes?: string[];
+
+  @ApiProperty({
+    required: false,
+    enum: ['basico', 'avanzado'],
+    description: 'Algoritmo de cálculo de viabilidad a usar (patrón Strategy). Por defecto: basico.',
+  })
+  algoritmo?: 'basico' | 'avanzado';
 }
