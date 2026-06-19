@@ -14,9 +14,8 @@ import { EstrategiaRepository } from '../DataBase/REPOSITORIES/EstrategiaReposit
 import { InventarioRepository } from '../DataBase/REPOSITORIES/InventarioRepository';
 import { RelacionProductoRecursoRepository } from '../DataBase/REPOSITORIES/RelacionProductoRecursoRepository';
 import { CalculoEstrategiaRepository } from '../DataBase/REPOSITORIES/CalculoEstrategiaRepository';
+import { ESTRATEGIA_CALCULO } from '../CalculoEstrategia/STRATEGIES/IEstrategiaCalculo';
 import { CalculoViabilidadBasico } from '../CalculoEstrategia/STRATEGIES/CalculoViabilidadBasico';
-import { CalculoViabilidadAvanzado } from '../CalculoEstrategia/STRATEGIES/CalculoViabilidadAvanzado';
-import { EstrategiaCalculoFactory } from '../CalculoEstrategia/STRATEGIES/EstrategiaCalculoFactory';
 
 @Module({
   imports: [
@@ -35,10 +34,9 @@ import { EstrategiaCalculoFactory } from '../CalculoEstrategia/STRATEGIES/Estrat
     { provide: INVENTARIO_REPOSITORY, useClass: InventarioRepository },
     { provide: RELACION_PRODUCTO_RECURSO_REPOSITORY, useClass: RelacionProductoRecursoRepository },
     { provide: CALCULO_ESTRATEGIA_REPOSITORY, useClass: CalculoEstrategiaRepository },
-    // Patrón Strategy: algoritmos de cálculo + selector
-    CalculoViabilidadBasico,
-    CalculoViabilidadAvanzado,
-    EstrategiaCalculoFactory,
+    // Patrón Strategy: el servicio depende de la abstracción IEstrategiaCalculo,
+    // enlazada aquí a la implementación concreta (la lógica de viabilidad original).
+    { provide: ESTRATEGIA_CALCULO, useClass: CalculoViabilidadBasico },
   ],
   exports: [EstrategiaService],
 })

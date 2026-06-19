@@ -4,9 +4,8 @@ import { ESTRATEGIA_REPOSITORY } from '../DataBase/INTERFACES/IEstrategiaReposit
 import { INVENTARIO_REPOSITORY } from '../DataBase/INTERFACES/IInventarioRepository';
 import { RELACION_PRODUCTO_RECURSO_REPOSITORY } from '../DataBase/INTERFACES/IRelacionProductoRecursoRepository';
 import { CALCULO_ESTRATEGIA_REPOSITORY } from '../DataBase/INTERFACES/ICalculoEstrategiaRepository';
+import { ESTRATEGIA_CALCULO } from '../CalculoEstrategia/STRATEGIES/IEstrategiaCalculo';
 import { CalculoViabilidadBasico } from '../CalculoEstrategia/STRATEGIES/CalculoViabilidadBasico';
-import { CalculoViabilidadAvanzado } from '../CalculoEstrategia/STRATEGIES/CalculoViabilidadAvanzado';
-import { EstrategiaCalculoFactory } from '../CalculoEstrategia/STRATEGIES/EstrategiaCalculoFactory';
 import { AuditoriaPublisher } from '../Auditoria/Auditoria.publisher';
 import { AccionAuditoria } from '../Auditoria/EVENTS/auditoria.event';
 
@@ -27,7 +26,11 @@ describe('EstrategiaService (integración de patrones)', () => {
     ],
   };
 
+  // Inventario disponible del recurso REC-1; parametrizable por test.
+  let cantidadDisponible: number;
+
   beforeEach(async () => {
+    cantidadDisponible = 100;
     estrategiaRepo = {
       buscarPorIdConRelaciones: jest.fn().mockResolvedValue(estrategia),
       actualizar: jest.fn().mockResolvedValue(undefined),
@@ -47,9 +50,19 @@ describe('EstrategiaService (integración de patrones)', () => {
       ]),
     };
     const inventarioRepo = {
-      buscarDisponiblesPorRecurso: jest.fn().mockResolvedValue([
-        { almacenId: 'ALM-1', lote: 1, fabricante: 'F', fechaFabricacion: new Date(), fechaCaducidad: new Date(), cantidadDisponible: 100, unidadMedida: 'kg' },
-      ]),
+      buscarDisponiblesPorRecurso: jest.fn().mockImplementation(() =>
+        Promise.resolve([
+          {
+            almacenId: 'ALM-1',
+            lote: 1,
+            fabricante: 'F',
+            fechaFabricacion: new Date(),
+            fechaCaducidad: new Date(),
+            cantidadDisponible,
+            unidadMedida: 'kg',
+          },
+        ]),
+      ),
     };
     const calculoRepo = {
       buscarUltimoPorEstrategia: jest.fn().mockResolvedValue(null),
@@ -59,9 +72,8 @@ describe('EstrategiaService (integración de patrones)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EstrategiaService,
-        CalculoViabilidadBasico,
-        CalculoViabilidadAvanzado,
-        EstrategiaCalculoFactory,
+        // Patrón Strategy: la abstracción se enlaza a la lógica de viabilidad real
+        { provide: ESTRATEGIA_CALCULO, useClass: CalculoViabilidadBasico },
         { provide: ESTRATEGIA_REPOSITORY, useValue: estrategiaRepo },
         { provide: RELACION_PRODUCTO_RECURSO_REPOSITORY, useValue: relacionRepo },
         { provide: INVENTARIO_REPOSITORY, useValue: inventarioRepo },
@@ -73,17 +85,19 @@ describe('EstrategiaService (integración de patrones)', () => {
     service = module.get<EstrategiaService>(EstrategiaService);
   });
 
-  it('usa el algoritmo básico por defecto: existencia=100 cubre requerido=100 => posible', async () => {
+  it('calcularEstrategiaDetallada delega en la estrategia: existencia=100 cubre requerido=100 => posible', async () => {
     const resultado = await service.calcularEstrategiaDetallada('EST-1');
 
     expect(resultado.resultadoGeneral).toBe('posible');
     expect(estrategiaRepo.actualizar).toHaveBeenCalledWith('EST-1', { resultadoCalculo: 'posible' });
   });
 
-  it('con el algoritmo avanzado el mismo caso es imposible (margen de seguridad)', async () => {
-    const resultado = await service.calcularEstrategiaDetallada('EST-1', { algoritmo: 'avanzado' });
+  it('calcularEstrategiaDetallada => imposible cuando falta inventario (80 < 100)', async () => {
+    cantidadDisponible = 80;
+    const resultado = await service.calcularEstrategiaDetallada('EST-1');
 
     expect(resultado.resultadoGeneral).toBe('imposible');
+    expect(resultado.productos[0].recursos[0].deficit).toBe(20);
   });
 
   it('emite un evento de auditoría CALCULAR_VIABILIDAD (patrón Observer)', async () => {

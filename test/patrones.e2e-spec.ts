@@ -237,24 +237,14 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
     expect(auditoria.body.some((a: any) => a.accion === 'CREAR_INVENTARIO')).toBe(true);
   });
 
-  it('Strategy: el algoritmo BÁSICO considera la estrategia POSIBLE (100 >= 100)', async () => {
+  it('Strategy: calcularEstrategiaDetallada delega en la estrategia => POSIBLE (100 >= 100)', async () => {
     const res = await request(app.getHttpServer())
       .post('/calculo-estrategias/calcular-detallado/EST-1')
-      .send({ algoritmo: 'basico' })
+      .send({})
       .expect(201);
 
     expect(res.body.resultadoGeneral).toBe('posible');
     expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(100);
-  });
-
-  it('Strategy: el algoritmo AVANZADO considera la estrategia IMPOSIBLE (margen 10% => requiere 110)', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/calculo-estrategias/calcular-detallado/EST-1')
-      .send({ algoritmo: 'avanzado' })
-      .expect(201);
-
-    expect(res.body.resultadoGeneral).toBe('imposible');
-    expect(res.body.productos[0].recursos[0].deficit).toBeCloseTo(10);
   });
 
   it('Observer: tras calcular, queda traza CALCULAR_VIABILIDAD en auditoría', async () => {
@@ -263,8 +253,8 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     const calc = auditoria.body.filter((a: any) => a.accion === 'CALCULAR_VIABILIDAD');
-    expect(calc.length).toBeGreaterThanOrEqual(2); // basico + avanzado
-    expect(['basico', 'avanzado']).toContain(calc[0].detalles.algoritmo);
+    expect(calc.length).toBeGreaterThanOrEqual(1);
+    expect(calc[0].detalles.resultadoGeneral).toBe('posible');
   });
 
   it('Compatibilidad: el endpoint protegido sigue exigiendo JWT (401 sin token)', async () => {

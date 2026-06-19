@@ -21,8 +21,9 @@ import {
 } from '../DataBase/INTERFACES/ICalculoEstrategiaRepository';
 import { ResultadoCalculoDto } from '../CalculoEstrategia/DTOS/resultado-calculo.dto';
 import { CalculoRequestDto } from '../CalculoEstrategia/DTOS/calculo-request.dto';
-import { EstrategiaCalculoFactory } from '../CalculoEstrategia/STRATEGIES/EstrategiaCalculoFactory';
 import {
+  ESTRATEGIA_CALCULO,
+  type IEstrategiaCalculo,
   ContextoCalculoViabilidad,
   ProductoContexto,
   RecursoContexto,
@@ -41,7 +42,8 @@ export class EstrategiaService {
     private readonly inventarioRepository: IInventarioRepository,
     @Inject(CALCULO_ESTRATEGIA_REPOSITORY)
     private readonly calculoRepository: ICalculoEstrategiaRepository,
-    private readonly calculoFactory: EstrategiaCalculoFactory,
+    @Inject(ESTRATEGIA_CALCULO)
+    private readonly calculoViabilidad: IEstrategiaCalculo,
     private readonly auditoria: AuditoriaPublisher,
   ) {}
 
@@ -192,7 +194,10 @@ export class EstrategiaService {
     );
   }
 
-  // Calcula la viabilidad detallada de una estrategia (patrón Strategy)
+  // Calcula la viabilidad detallada de una estrategia.
+  // Conserva su finalidad original; ahora obtiene los datos vía repositorios
+  // (Repositorio), delega la decisión en la estrategia de cálculo (Strategy) y
+  // notifica la acción para su trazabilidad (Observer).
   async calcularEstrategiaDetallada(
     id: string,
     options?: CalculoRequestDto,
@@ -200,9 +205,8 @@ export class EstrategiaService {
   ): Promise<ResultadoCalculoDto> {
     const contexto = await this.construirContextoCalculo(id);
 
-    // Selección del algoritmo de cálculo (patrón Strategy)
-    const algoritmo = this.calculoFactory.obtener(options?.algoritmo);
-    const resultado = algoritmo.calcular(contexto);
+    // El servicio (contexto) delega el cálculo en la estrategia inyectada.
+    const resultado = this.calculoViabilidad.calcular(contexto);
 
     await this.estrategiaRepository.actualizar(id, {
       resultadoCalculo: resultado.resultadoGeneral,
@@ -215,7 +219,7 @@ export class EstrategiaService {
         entidadId: id,
         usuarioId,
         detalles: {
-          algoritmo: algoritmo.nombre,
+          algoritmo: this.calculoViabilidad.nombre,
           resultadoGeneral: resultado.resultadoGeneral,
           presupuestoUtilizado: resultado.presupuestoUtilizado,
         },
@@ -288,7 +292,6 @@ export class EstrategiaService {
     return {
       estrategiaId: estrategia.id,
       nombreEstrategia: estrategia.nombre,
-      presupuestoMaximo: Number(estrategia.presupuestoMaximo),
       presupuestoUtilizadoPrevio: ultimoCalculo
         ? Number(ultimoCalculo.presupuestoUtilizado)
         : null,

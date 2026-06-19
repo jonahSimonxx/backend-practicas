@@ -28,21 +28,29 @@ export interface ProductoContexto {
 export interface ContextoCalculoViabilidad {
   estrategiaId: string;
   nombreEstrategia: string;
-  presupuestoMaximo: number;
   /** Presupuesto del último cálculo registrado, si existe. */
   presupuestoUtilizadoPrevio: number | null;
   productos: ProductoContexto[];
 }
 
 /**
+ * Token de inyección para la estrategia de cálculo de viabilidad.
+ *
+ * Permite que el servicio dependa de la abstracción {@link IEstrategiaCalculo}
+ * y no de una implementación concreta (las interfaces no existen en runtime).
+ */
+export const ESTRATEGIA_CALCULO = 'ESTRATEGIA_CALCULO';
+
+/**
  * Contrato del algoritmo de cálculo de viabilidad (patrón Strategy).
  *
- * Cada implementación concreta decide, a partir del {@link ContextoCalculoViabilidad},
+ * La implementación concreta decide, a partir del {@link ContextoCalculoViabilidad},
  * si la estrategia es viable y construye el {@link ResultadoCalculoDto}. El
- * servicio puede intercambiar algoritmos sin cambiar su lógica de orquestación.
+ * servicio (contexto) delega en esta abstracción, de modo que el algoritmo se
+ * puede sustituir sin tocar la orquestación de `calcularEstrategiaDetallada`.
  */
 export interface IEstrategiaCalculo {
-  /** Identificador del algoritmo, usado para seleccionarlo en tiempo de ejecución. */
+  /** Identificador descriptivo del algoritmo (se registra en la auditoría). */
   readonly nombre: string;
 
   calcular(contexto: ContextoCalculoViabilidad): ResultadoCalculoDto;
