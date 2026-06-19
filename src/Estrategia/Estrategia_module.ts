@@ -6,7 +6,16 @@ import { Estrategia } from './ENTITY/Estrategia.entity';
 import { RelacionProductoRecurso } from '../RelacionProductoRecurso/ENTITY/RelacionProductoRecurso.entity';
 import { Inventario } from '../Inventario/ENTITY/Inventario.entity';
 import { CalculoEstrategia } from '../CalculoEstrategia/ENTITY/CalculoEstrategia.entity';
-import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCalculoRecurso.entity';
+import { ESTRATEGIA_REPOSITORY } from '../DataBase/INTERFACES/IEstrategiaRepository';
+import { INVENTARIO_REPOSITORY } from '../DataBase/INTERFACES/IInventarioRepository';
+import { RELACION_PRODUCTO_RECURSO_REPOSITORY } from '../DataBase/INTERFACES/IRelacionProductoRecursoRepository';
+import { CALCULO_ESTRATEGIA_REPOSITORY } from '../DataBase/INTERFACES/ICalculoEstrategiaRepository';
+import { EstrategiaRepository } from '../DataBase/REPOSITORIES/EstrategiaRepository';
+import { InventarioRepository } from '../DataBase/REPOSITORIES/InventarioRepository';
+import { RelacionProductoRecursoRepository } from '../DataBase/REPOSITORIES/RelacionProductoRecursoRepository';
+import { CalculoEstrategiaRepository } from '../DataBase/REPOSITORIES/CalculoEstrategiaRepository';
+import { ESTRATEGIA_CALCULO } from '../CalculoEstrategia/STRATEGIES/IEstrategiaCalculo';
+import { CalculoViabilidadBasico } from '../CalculoEstrategia/STRATEGIES/CalculoViabilidadBasico';
 
 @Module({
   imports: [
@@ -15,11 +24,20 @@ import { DetalleCalculoRecurso } from '../DetalleCalculoRecurso/ENTITY/DetalleCa
       RelacionProductoRecurso,
       Inventario,
       CalculoEstrategia,
-      DetalleCalculoRecurso,
     ]),
   ],
   controllers: [EstrategiaController],
-  providers: [EstrategiaService],
+  providers: [
+    EstrategiaService,
+    // Patrón Repositorio: la abstracción (token) se enlaza a la implementación concreta
+    { provide: ESTRATEGIA_REPOSITORY, useClass: EstrategiaRepository },
+    { provide: INVENTARIO_REPOSITORY, useClass: InventarioRepository },
+    { provide: RELACION_PRODUCTO_RECURSO_REPOSITORY, useClass: RelacionProductoRecursoRepository },
+    { provide: CALCULO_ESTRATEGIA_REPOSITORY, useClass: CalculoEstrategiaRepository },
+    // Patrón Strategy: el servicio depende de la abstracción IEstrategiaCalculo,
+    // enlazada aquí a la implementación concreta (la lógica de viabilidad original).
+    { provide: ESTRATEGIA_CALCULO, useClass: CalculoViabilidadBasico },
+  ],
   exports: [EstrategiaService],
 })
 export class EstrategiasModule {}
