@@ -257,6 +257,65 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
     expect(calc[0].detalles.resultadoGeneral).toBe('posible');
   });
 
+  it('Almacenes inactivos NO se consideran en el cálculo (regla implícita)', async () => {
+    // Almacén inactivo con MUCHO inventario del recurso REC-1.
+    const almacenRepo: Repository<Almacen> = app.get(getRepositoryToken(Almacen));
+    await almacenRepo.save(
+      almacenRepo.create({
+        id: 'ALM-INACTIVO',
+        nombre: 'Almacen inactivo',
+        ubicacion: 'Cusco',
+        tipoAlmacen: 'secundario',
+        estado: 'inactivo',
+      }),
+    );
+    const inventarioRepo: Repository<Inventario> = app.get(getRepositoryToken(Inventario));
+    await inventarioRepo.save(
+      inventarioRepo.create({
+        id: 'INV-INACT',
+        recursoId: 'REC-1',
+        almacenId: 'ALM-INACTIVO',
+        lote: 2002,
+        fabricante: 'Fab',
+        fechaFabricacion: new Date('2024-01-15'),
+        fechaCaducidad: new Date('2027-01-15'),
+        cantidadDisponible: 500,
+        estado: 'disponible',
+        numeroMuestreo: 1,
+        unidadMedida: 'kg',
+        areaAlmacenamiento: 'Zona B',
+      }),
+    );
+
+    // A pesar de las 500 unidades del almacén inactivo, la existencia sigue
+    // siendo 100 (solo cuenta el almacén activo ALM-1).
+    const res = await request(app.getHttpServer())
+      .post('/calculo-estrategias/calcular-detallado/EST-1')
+      .send({})
+      .expect(201);
+
+    expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(100);
+    expect(res.body.resultadoGeneral).toBe('posible');
+  });
+
+  it('priorizarAlmacenes restringe el cálculo a los almacenes indicados (y activos)', async () => {
+    // Priorizar el almacén activo ALM-1 => sigue siendo posible (100 >= 100).
+    const conActivo = await request(app.getHttpServer())
+      .post('/calculo-estrategias/calcular-detallado/EST-1')
+      .send({ priorizarAlmacenes: ['ALM-1'] })
+      .expect(201);
+    expect(conActivo.body.productos[0].recursos[0].existenciaInventario).toBe(100);
+    expect(conActivo.body.resultadoGeneral).toBe('posible');
+
+    // Priorizar solo el almacén inactivo => se ignora, existencia 0 => imposible.
+    const conInactivo = await request(app.getHttpServer())
+      .post('/calculo-estrategias/calcular-detallado/EST-1')
+      .send({ priorizarAlmacenes: ['ALM-INACTIVO'] })
+      .expect(201);
+    expect(conInactivo.body.productos[0].recursos[0].existenciaInventario).toBe(0);
+    expect(conInactivo.body.resultadoGeneral).toBe('imposible');
+  });
+
   it('Compatibilidad: el endpoint protegido sigue exigiendo JWT (401 sin token)', async () => {
     await request(app.getHttpServer()).get('/estrategias').expect(401);
   });

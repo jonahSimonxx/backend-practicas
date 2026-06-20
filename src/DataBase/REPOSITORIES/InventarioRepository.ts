@@ -64,6 +64,24 @@ export class InventarioRepository implements IInventarioRepository {
     });
   }
 
+  async buscarDisponiblesEnAlmacenesActivos(
+    recursoId: string,
+    almacenIds?: string[],
+  ): Promise<Inventario[]> {
+    const inventarios = await this.repository.find({
+      where: { recursoId, estado: 'disponible' },
+      relations: ['almacen'],
+    });
+
+    const soloPriorizados = almacenIds != null && almacenIds.length > 0;
+
+    return inventarios.filter(
+      (inventario) =>
+        inventario.almacen?.estado === 'activo' &&
+        (!soloPriorizados || almacenIds!.includes(inventario.almacenId)),
+    );
+  }
+
   async actualizar(id: string, cambios: Partial<Inventario>): Promise<void> {
     await this.repository.update(id, cambios);
   }

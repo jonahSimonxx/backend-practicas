@@ -49,20 +49,32 @@ describe('EstrategiaService (integración de patrones)', () => {
         },
       ]),
     };
+    const inventarioDisponible = () => ({
+      almacenId: 'ALM-1',
+      lote: 1,
+      fabricante: 'F',
+      fechaFabricacion: new Date(),
+      fechaCaducidad: new Date(),
+      cantidadDisponible,
+      unidadMedida: 'kg',
+      almacen: { id: 'ALM-1', estado: 'activo' },
+    });
     const inventarioRepo = {
       buscarDisponiblesPorRecurso: jest.fn().mockImplementation(() =>
-        Promise.resolve([
-          {
-            almacenId: 'ALM-1',
-            lote: 1,
-            fabricante: 'F',
-            fechaFabricacion: new Date(),
-            fechaCaducidad: new Date(),
-            cantidadDisponible,
-            unidadMedida: 'kg',
-          },
-        ]),
+        Promise.resolve([inventarioDisponible()]),
       ),
+      // El recurso REC-1 vive en el almacén activo ALM-1; el mock respeta el
+      // filtro de almacenes priorizados igual que la implementación real.
+      buscarDisponiblesEnAlmacenesActivos: jest
+        .fn()
+        .mockImplementation((_recursoId: string, almacenIds?: string[]) => {
+          const inventarios = [inventarioDisponible()];
+          const filtrados =
+            almacenIds && almacenIds.length > 0
+              ? inventarios.filter((i) => almacenIds.includes(i.almacenId))
+              : inventarios;
+          return Promise.resolve(filtrados);
+        }),
     };
     const calculoRepo = {
       buscarUltimoPorEstrategia: jest.fn().mockResolvedValue(null),
@@ -98,6 +110,25 @@ describe('EstrategiaService (integración de patrones)', () => {
 
     expect(resultado.resultadoGeneral).toBe('imposible');
     expect(resultado.productos[0].recursos[0].deficit).toBe(20);
+  });
+
+  it('priorizarAlmacenes se propaga al repositorio para restringir el cálculo', async () => {
+    const inventarioRepo: any = (service as any).inventarioRepository;
+
+    await service.calcularEstrategiaDetallada('EST-1', { priorizarAlmacenes: ['ALM-1'] });
+
+    expect(inventarioRepo.buscarDisponiblesEnAlmacenesActivos).toHaveBeenCalledWith('REC-1', [
+      'ALM-1',
+    ]);
+  });
+
+  it('priorizar un almacén sin inventario del recurso => existencia 0 e imposible', async () => {
+    const resultado = await service.calcularEstrategiaDetallada('EST-1', {
+      priorizarAlmacenes: ['ALM-INEXISTENTE'],
+    });
+
+    expect(resultado.productos[0].recursos[0].existenciaInventario).toBe(0);
+    expect(resultado.resultadoGeneral).toBe('imposible');
   });
 
   it('emite un evento de auditoría CALCULAR_VIABILIDAD (patrón Observer)', async () => {
