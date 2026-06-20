@@ -19,6 +19,15 @@ export interface IInventarioRepository {
   buscarPorAlmacen(almacenId: string): Promise<Inventario[]>;
   buscarPorEstado(estado: string): Promise<Inventario[]>;
   buscarDisponiblesPorRecurso(recursoId: string): Promise<Inventario[]>;
+  /**
+   * Inventario 'disponible' de un recurso que se encuentra en almacenes ACTIVOS.
+   * Los almacenes inactivos se excluyen siempre (regla implícita del cálculo).
+   * Si se pasa `almacenesPermitidos`, restringe además la búsqueda a esos almacenes.
+   */
+  buscarDisponiblesEnAlmacenesActivos(
+    recursoId: string,
+    almacenesPermitidos?: string[],
+  ): Promise<Inventario[]>;
   actualizar(id: string, cambios: Partial<Inventario>): Promise<void>;
   /** Devuelve el número de filas afectadas. */
   eliminar(id: string): Promise<number>;

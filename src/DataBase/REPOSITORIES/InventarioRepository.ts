@@ -64,6 +64,28 @@ export class InventarioRepository implements IInventarioRepository {
     });
   }
 
+  buscarDisponiblesEnAlmacenesActivos(
+    recursoId: string,
+    almacenesPermitidos?: string[],
+  ): Promise<Inventario[]> {
+    const qb = this.repository
+      .createQueryBuilder('inventario')
+      .innerJoin('inventario.almacen', 'almacen')
+      .where('inventario.recursoId = :recursoId', { recursoId })
+      .andWhere('inventario.estado = :estadoInv', { estadoInv: 'disponible' })
+      // Exclusión implícita de almacenes inactivos (antes era el flag usarAlmacenesNoTocar)
+      .andWhere('almacen.estado = :estadoAlm', { estadoAlm: 'activo' });
+
+    // Filtro opcional: restringir a almacenes específicos (priorizarAlmacenes)
+    if (almacenesPermitidos && almacenesPermitidos.length > 0) {
+      qb.andWhere('inventario.almacenId IN (:...almacenes)', {
+        almacenes: almacenesPermitidos,
+      });
+    }
+
+    return qb.getMany();
+  }
+
   async actualizar(id: string, cambios: Partial<Inventario>): Promise<void> {
     await this.repository.update(id, cambios);
   }

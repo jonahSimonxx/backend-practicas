@@ -50,7 +50,7 @@ describe('EstrategiaService (integración de patrones)', () => {
       ]),
     };
     const inventarioRepo = {
-      buscarDisponiblesPorRecurso: jest.fn().mockImplementation(() =>
+      buscarDisponiblesEnAlmacenesActivos: jest.fn().mockImplementation(() =>
         Promise.resolve([
           {
             almacenId: 'ALM-1',

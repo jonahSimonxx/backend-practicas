@@ -138,15 +138,11 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
     );
 
     const almacenRepo: Repository<Almacen> = app.get(getRepositoryToken(Almacen));
-    await almacenRepo.save(
-      almacenRepo.create({
-        id: 'ALM-1',
-        nombre: 'Almacen 1',
-        ubicacion: 'Lima',
-        tipoAlmacen: 'central',
-        estado: 'activo',
-      }),
-    );
+    await almacenRepo.save([
+      almacenRepo.create({ id: 'ALM-1', nombre: 'Almacen 1', ubicacion: 'Lima', tipoAlmacen: 'central', estado: 'activo' }),
+      almacenRepo.create({ id: 'ALM-2', nombre: 'Almacen 2', ubicacion: 'Lima', tipoAlmacen: 'central', estado: 'activo' }),
+      almacenRepo.create({ id: 'ALM-3', nombre: 'Almacen 3', ubicacion: 'Lima', tipoAlmacen: 'central', estado: 'inactivo' }),
+    ]);
 
     const relacionRepo: Repository<RelacionProductoRecurso> = app.get(
       getRepositoryToken(RelacionProductoRecurso),
@@ -160,6 +156,26 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
         tipoRelacion: 'consumo',
       }),
     );
+
+    // Inventario de REC-1 repartido en almacenes (requerido total = 10 * 10 = 100):
+    //   ALM-1 (activo):    60   -> se crea vía API en un test (audita CREAR_INVENTARIO)
+    //   ALM-2 (activo):    50
+    //   ALM-3 (inactivo): 1000  -> debe quedar EXCLUIDO siempre
+    const inventarioRepo: Repository<Inventario> = app.get(getRepositoryToken(Inventario));
+    await inventarioRepo.save([
+      inventarioRepo.create({
+        id: 'INV-2', recursoId: 'REC-1', almacenId: 'ALM-2', lote: 2002, fabricante: 'Fab',
+        fechaFabricacion: new Date('2024-01-15'), fechaCaducidad: new Date('2027-01-15'),
+        cantidadDisponible: 50, estado: 'disponible', numeroMuestreo: 1,
+        fechaVigencia: null, unidadMedida: 'kg', areaAlmacenamiento: 'Zona A',
+      }),
+      inventarioRepo.create({
+        id: 'INV-3', recursoId: 'REC-1', almacenId: 'ALM-3', lote: 3003, fabricante: 'Fab',
+        fechaFabricacion: new Date('2024-01-15'), fechaCaducidad: new Date('2027-01-15'),
+        cantidadDisponible: 1000, estado: 'disponible', numeroMuestreo: 1,
+        fechaVigencia: null, unidadMedida: 'kg', areaAlmacenamiento: 'Zona A',
+      }),
+    ]);
 
     // --- Login para obtener JWT ---
     const res = await request(app.getHttpServer())
@@ -222,7 +238,7 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
         fabricante: 'Fab',
         fechaFabricacion: '2024-01-15',
         fechaCaducidad: '2027-01-15',
-        cantidadDisponible: 100,
+        cantidadDisponible: 60,
         estado: 'disponible',
         numeroMuestreo: 1,
         unidadMedida: 'kg',
@@ -237,14 +253,37 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
     expect(auditoria.body.some((a: any) => a.accion === 'CREAR_INVENTARIO')).toBe(true);
   });
 
-  it('Strategy: calcularEstrategiaDetallada delega en la estrategia => POSIBLE (100 >= 100)', async () => {
+  it('Strategy: sin filtro suma solo almacenes ACTIVOS (60+50=110) y excluye el inactivo (1000) => POSIBLE', async () => {
     const res = await request(app.getHttpServer())
       .post('/calculo-estrategias/calcular-detallado/EST-1')
       .send({})
       .expect(201);
 
+    // Si el inventario del almacén inactivo (1000) se contara, existencia sería 1110.
+    expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(110);
     expect(res.body.resultadoGeneral).toBe('posible');
-    expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(100);
+  });
+
+  it('priorizarAlmacenes: restringe a ALM-1 (60 < 100) => IMPOSIBLE con déficit 40', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/calculo-estrategias/calcular-detallado/EST-1')
+      .send({ priorizarAlmacenes: ['ALM-1'] })
+      .expect(201);
+
+    expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(60);
+    expect(res.body.productos[0].recursos[0].deficit).toBe(40);
+    expect(res.body.resultadoGeneral).toBe('imposible');
+  });
+
+  it('Exclusión implícita: aunque se priorice el almacén inactivo (ALM-3), queda excluido => solo ALM-1 (60) => IMPOSIBLE', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/calculo-estrategias/calcular-detallado/EST-1')
+      .send({ priorizarAlmacenes: ['ALM-1', 'ALM-3'] })
+      .expect(201);
+
+    // ALM-3 está inactivo: sus 1000 unidades NO se cuentan aunque se pidan explícitamente.
+    expect(res.body.productos[0].recursos[0].existenciaInventario).toBe(60);
+    expect(res.body.resultadoGeneral).toBe('imposible');
   });
 
   it('Observer: tras calcular, queda traza CALCULAR_VIABILIDAD en auditoría', async () => {
@@ -253,8 +292,11 @@ describe('Patrones Strategy / Observer / Repositorio (E2E real con pg-mem)', () 
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     const calc = auditoria.body.filter((a: any) => a.accion === 'CALCULAR_VIABILIDAD');
-    expect(calc.length).toBeGreaterThanOrEqual(1);
-    expect(calc[0].detalles.resultadoGeneral).toBe('posible');
+    // Se hicieron 3 cálculos (sin filtro + dos con priorizarAlmacenes)
+    expect(calc.length).toBeGreaterThanOrEqual(3);
+    // El más reciente registra el filtro de almacenes usado
+    expect(calc[0].detalles).toHaveProperty('resultadoGeneral');
+    expect(calc[0].detalles).toHaveProperty('almacenesPriorizados');
   });
 
   it('Compatibilidad: el endpoint protegido sigue exigiendo JWT (401 sin token)', async () => {
