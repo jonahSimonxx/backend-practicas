@@ -185,9 +185,12 @@ export class EstrategiaService {
     return this.mapToDto(updatedEstrategia);
   }
 
-  // Obtiene la existencia total de un recurso
+  // Obtiene la existencia total disponible de un recurso.
+  // Solo cuenta inventario en almacenes ACTIVOS: los inactivos nunca se
+  // consideran en ningún cálculo de viabilidad.
   async obtenerExistenciaTotalRecurso(recursoId: string): Promise<number> {
-    const inventarios = await this.inventarioRepository.buscarDisponiblesPorRecurso(recursoId);
+    const inventarios =
+      await this.inventarioRepository.buscarDisponiblesEnAlmacenesActivos(recursoId);
     return inventarios.reduce(
       (total, inventario) => total + Number(inventario.cantidadDisponible),
       0,
@@ -203,7 +206,7 @@ export class EstrategiaService {
     options?: CalculoRequestDto,
     usuarioId?: string,
   ): Promise<ResultadoCalculoDto> {
-    const contexto = await this.construirContextoCalculo(id);
+    const contexto = await this.construirContextoCalculo(id, options);
 
     // El servicio (contexto) delega el cálculo en la estrategia inyectada.
     const resultado = this.calculoViabilidad.calcular(contexto);
@@ -222,6 +225,7 @@ export class EstrategiaService {
           algoritmo: this.calculoViabilidad.nombre,
           resultadoGeneral: resultado.resultadoGeneral,
           presupuestoUtilizado: resultado.presupuestoUtilizado,
+          almacenesPriorizados: options?.priorizarAlmacenes ?? null,
         },
       }),
     );
@@ -234,7 +238,10 @@ export class EstrategiaService {
    * necesita. El acceso a datos vive aquí; la decisión de viabilidad vive en la
    * estrategia (patrón Strategy).
    */
-  private async construirContextoCalculo(id: string): Promise<ContextoCalculoViabilidad> {
+  private async construirContextoCalculo(
+    id: string,
+    options?: CalculoRequestDto,
+  ): Promise<ContextoCalculoViabilidad> {
     const estrategia = await this.estrategiaRepository.buscarPorIdConRelaciones(id, [
       'demandas',
       'demandas.producto',
@@ -255,9 +262,20 @@ export class EstrategiaService {
       for (const relacion of relaciones) {
         const recurso = relacion.recurso;
         const cantidadRequeridaTotal = relacion.cantidadRequerida * demanda.cantidadRequerida;
-        const existenciaTotal = await this.obtenerExistenciaTotalRecurso(recurso.id);
+
+        // Inventario disponible en almacenes ACTIVOS. Si el usuario indicó
+        // almacenes a priorizar, el cálculo se restringe a esos almacenes
+        // (los inactivos se ignoran igualmente). La existencia y el detalle
+        // se derivan del MISMO conjunto, para que sean coherentes.
         const inventariosDetalle =
-          await this.inventarioRepository.buscarDisponiblesPorRecurso(recurso.id);
+          await this.inventarioRepository.buscarDisponiblesEnAlmacenesActivos(
+            recurso.id,
+            options?.priorizarAlmacenes,
+          );
+        const existenciaTotal = inventariosDetalle.reduce(
+          (total, i) => total + Number(i.cantidadDisponible),
+          0,
+        );
 
         recursos.push({
           recursoId: recurso.id,
