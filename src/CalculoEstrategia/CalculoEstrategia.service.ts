@@ -22,8 +22,7 @@ export class CalculoEstrategiaService {
     private readonly auditoria: AuditoriaPublisher,
   ) {}
 
-  async create(createCalculoEstrategiaDto: CreateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
-    // Verificar si ya existe un cálculo con ese ID
+  async create(createCalculoEstrategiaDto: CreateCalculoEstrategiaDto, usuarioId?: string,): Promise<CalculoEstrategiaDto> {
     const existente = await this.calculoEstrategiaRepository.buscarPorId(
       createCalculoEstrategiaDto.id,
     );
@@ -32,7 +31,6 @@ export class CalculoEstrategiaService {
       throw new ConflictException(`Ya existe un cálculo con ID ${createCalculoEstrategiaDto.id}`);
     }
 
-    // Validar que la suma no exceda límites razonables
     this.validarPresupuesto(
       createCalculoEstrategiaDto.presupuestoUtilizado,
       createCalculoEstrategiaDto.presupuestoDisponible,
@@ -46,6 +44,7 @@ export class CalculoEstrategiaService {
         accion: AccionAuditoria.CREAR_CALCULO,
         entidad: 'CalculoEstrategia',
         entidadId: savedCalculo.id,
+        usuarioId,
         detalles: {
           estrategiaId: savedCalculo.estrategiaId,
           resultadoGeneral: savedCalculo.resultadoGeneral,
@@ -91,7 +90,7 @@ export class CalculoEstrategiaService {
     return this.mapToDto(calculo);
   }
 
-  async update(id: string, updateCalculoEstrategiaDto: UpdateCalculoEstrategiaDto): Promise<CalculoEstrategiaDto> {
+  async update(id: string, updateCalculoEstrategiaDto: UpdateCalculoEstrategiaDto, usuarioId?: string,): Promise<CalculoEstrategiaDto> {
     const calculo = await this.calculoEstrategiaRepository.buscarPorId(id);
 
     if (!calculo) {
@@ -121,6 +120,7 @@ export class CalculoEstrategiaService {
         accion: AccionAuditoria.ACTUALIZAR_CALCULO,
         entidad: 'CalculoEstrategia',
         entidadId: id,
+        usuarioId,
         detalles: { cambios: { ...updateCalculoEstrategiaDto } },
       }),
     );
@@ -128,7 +128,7 @@ export class CalculoEstrategiaService {
     return this.mapToDto(updatedCalculo);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, usuarioId?: string,): Promise<void> {
     const calculo = await this.calculoEstrategiaRepository.buscarPorId(id);
 
     if (!calculo) {
@@ -146,6 +146,7 @@ export class CalculoEstrategiaService {
         accion: AccionAuditoria.ELIMINAR_CALCULO,
         entidad: 'CalculoEstrategia',
         entidadId: id,
+        usuarioId,
       }),
     );
   }
@@ -163,9 +164,9 @@ export class CalculoEstrategiaService {
       };
     }
   }
-//////////////nesty 1
-  async calcularEstrategiaDetallada(estrategiaId: string, calculoRequest?: CalculoRequestDto): Promise<ResultadoCalculoDto> {
-    return this.estrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest);
+
+  async calcularEstrategiaDetallada(estrategiaId: string, calculoRequest?: CalculoRequestDto, usuarioId?: string,): Promise<ResultadoCalculoDto> {
+    return this.estrategiaService.calcularEstrategiaDetallada(estrategiaId, calculoRequest, usuarioId);
   }
 
 
